@@ -1,0 +1,330 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 14px;
+  --background: #ffffff;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #3B82F6;
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #334155;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --switch-background: #e2e8f0;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #3B82F6;
+  --chart-1: #3B82F6;
+  --chart-2: #60A5FA;
+  --chart-3: #93C5FD;
+  --chart-4: #DBEAFE;
+  --chart-5: #EFF6FF;
+  --radius: 0.75rem;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #3B82F6;
+  
+  /* Newzia brand colors - Clean blue theme */
+  --newzia-primary: #3B82F6;
+  --newzia-primary-hover: #2563EB;
+  --newzia-primary-light: #60A5FA;
+  --newzia-primary-lighter: #93C5FD;
+  --newzia-blue-50: #EFF6FF;
+  --newzia-blue-100: #DBEAFE;
+  --newzia-blue-200: #BFDBFE;
+  --newzia-blue-300: #93C5FD;
+  --newzia-blue-400: #60A5FA;
+  --newzia-blue-500: #3B82F6;
+  --newzia-blue-600: #2563EB;
+  --newzia-blue-700: #1D4ED8;
+  --newzia-blue-800: #1E40AF;
+  --newzia-blue-900: #1E3A8A;
+  --newzia-gray-50: #f8fafc;
+  --newzia-gray-100: #f1f5f9;
+  --newzia-gray-200: #e2e8f0;
+  --newzia-gray-300: #cbd5e1;
+  --newzia-gray-400: #94a3b8;
+  --newzia-gray-500: #64748b;
+  --newzia-gray-600: #475569;
+  --newzia-gray-700: #334155;
+  --newzia-gray-800: #1e293b;
+  --newzia-gray-900: #0f172a;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --primary: #60A5FA;
+  --primary-foreground: #0f172a;
+  --secondary: #334155;
+  --secondary-foreground: #f8fafc;
+  --muted: #475569;
+  --muted-foreground: #94a3b8;
+  --accent: #334155;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #334155;
+  --input: #1e293b;
+  --input-background: #1e293b;
+  --switch-background: #475569;
+  --ring: #60A5FA;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #60A5FA;
+  --chart-2: #3B82F6;
+  --chart-3: #2563EB;
+  --chart-4: #1D4ED8;
+  --chart-5: #1E40AF;
+  --sidebar: #334155;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #60A5FA;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #475569;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #475569;
+  --sidebar-ring: #60A5FA;
+  
+  /* Dark mode Newzia colors */
+  --newzia-primary: #60A5FA;
+  --newzia-primary-hover: #3B82F6;
+  --newzia-primary-light: #93C5FD;
+  --newzia-primary-lighter: #BFDBFE;
+}
+
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE + Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Newzia custom colors */
+  --color-newzia-primary: var(--newzia-primary);
+  --color-newzia-primary-hover: var(--newzia-primary-hover);
+  --color-newzia-primary-light: var(--newzia-primary-light);
+  --color-newzia-primary-lighter: var(--newzia-primary-lighter);
+  --color-newzia-blue-50: var(--newzia-blue-50);
+  --color-newzia-blue-100: var(--newzia-blue-100);
+  --color-newzia-blue-200: var(--newzia-blue-200);
+  --color-newzia-blue-300: var(--newzia-blue-300);
+  --color-newzia-blue-400: var(--newzia-blue-400);
+  --color-newzia-blue-500: var(--newzia-blue-500);
+  --color-newzia-blue-600: var(--newzia-blue-600);
+  --color-newzia-blue-700: var(--newzia-blue-700);
+  --color-newzia-blue-800: var(--newzia-blue-800);
+  --color-newzia-blue-900: var(--newzia-blue-900);
+  --color-newzia-gray-50: var(--newzia-gray-50);
+  --color-newzia-gray-100: var(--newzia-gray-100);
+  --color-newzia-gray-200: var(--newzia-gray-200);
+  --color-newzia-gray-300: var(--newzia-gray-300);
+  --color-newzia-gray-400: var(--newzia-gray-400);
+  --color-newzia-gray-500: var(--newzia-gray-500);
+  --color-newzia-gray-600: var(--newzia-gray-600);
+  --color-newzia-gray-700: var(--newzia-gray-700);
+  --color-newzia-gray-800: var(--newzia-gray-800);
+  --color-newzia-gray-900: var(--newzia-gray-900);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+  }
+}
+
+/**
+ * Base typography with improved spacing and line heights
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.025em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    p {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    button {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    input {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+  }
+}
+
+html {
+  font-size: 16px;
+}
+
+/* Enhanced transitions and animations */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+}
+
+/* Enhanced shadows */
+.shadow-subtle {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.shadow-moderate {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.shadow-strong {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-subtle {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+.dark .shadow-moderate {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+}
+
+.dark .shadow-strong {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}
