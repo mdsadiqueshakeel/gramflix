@@ -1,224 +1,236 @@
-# Referral Wallet System
+# Referral Wallet System - Backend
 
-## Overview
-A Spring Boot application that implements a referral-based wallet system with user registration, OTP verification, premium user upgrades, wallet management, and withdrawal functionality.
+This document outlines the backend structure, API endpoints, and instructions on how to run the application.
 
-## Features
+## Directory Structure
 
-### Authentication
-- Two-step registration with OTP verification (email/WhatsApp)
-- JWT-based authentication
-- Password security with BCrypt encryption
-
-### User Management
-- Normal and Premium user types
-- Admin user for system management
-- User profile management
-
-### Referral System
-- Unique referral codes for each user
-- Referral bonus credits (200 units) when referred users register
-- Wallet balance tracking
-
-### Wallet Features
-- Wallet balance tracking
-- Transaction history
-- Withdrawal requests (for Premium users)
-- Admin approval/rejection of withdrawals
-
-### Premium Upgrade
-- Users can request premium status
-- Admin approval/rejection of premium requests
-- Premium users get additional benefits (withdrawal capability)
-
-### Notifications
-- Email notifications for OTP verification
-- WhatsApp notifications (via Twilio)
-- Admin notifications for premium and withdrawal requests
-
-## Technical Stack
-
-### Backend
-- Java 17
-- Spring Boot
-- Spring Security with JWT
-- MongoDB Atlas for database
-- Spring Mail for email notifications
-- Twilio API for WhatsApp messages
-
-### Security
-- JWT authentication
-- Password encryption with BCrypt
-- OTP verification for registration
+```
+. (f:\scam\fullstack-gramflix\referral-wallet-system\src\main\java\com\example\referralwallet)
+├── ReferralWalletApplication.java
+├── config\
+│   ├── DataSeeder.java
+│   ├── EmailConfig.java
+│   ├── JwtFilterConfig.java
+│   ├── MongoConfig.java
+│   └── SecurityConfig.java
+├── controller\
+│   ├── AdminController.java
+│   ├── AuthController.java
+│   ├── OtpController.java
+│   └── UserController.java
+├── dto\
+│   ├── AdminDtos.java
+│   ├── AuthDtos.java
+│   ├── OtpDtos.java
+│   └── UserDtos.java
+├── model\
+│   ├── AuditLog.java
+│   ├── Otp.java
+│   ├── PremiumRequest.java
+│   ├── User.java
+│   ├── WalletTransaction.java
+│   └── WithdrawRequest.java
+├── repository\
+│   ├── AuditLogRepository.java
+│   ├── OtpRepository.java
+│   ├── PremiumRequestRepository.java
+│   ├── UserRepository.java
+│   └── WithdrawRequestRepository.java
+├── security\
+│   ├── CustomUserDetailsService.java
+│   ├── JwtAuthenticationFilter.java
+│   └── JwtProvider.java
+├── service\
+│   ├── AdminService.java
+│   ├── AuthService.java
+│   ├── EmailService.java
+│   ├── OtpService.java
+│   ├── ReferralService.java
+│   ├── TwilioService.java
+│   └── UserService.java
+└── util\
+    ├── DateUtil.java
+    ├── PasswordEncoderUtil.java
+    ├── ResponseUtil.java
+    └── TokenGenerator.java
+```
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - Register a new user (step 1)
-- `POST /api/auth/verify-otp` - Verify OTP and complete registration (step 2)
-- `POST /api/auth/login` - User login
+### AuthController (`/api/auth`)
 
-### OTP
-- `POST /api/otp/send` - Send OTP
-- `POST /api/otp/verify` - Verify OTP
+- `POST /api/auth/init-register`
+  - Description: Initiates user registration.
+  - Request Body: `AuthDtos.RegisterRequest`
+    ```json
+    {
+      "name": "string",
+      "email": "string",
+      ""mobile": "string",
+      "password": "string",
+      "referralId": "string" (optional)
+    }
+    ```
+- `POST /api/auth/complete-register`
+  - Description: Completes user registration after OTP verification.
+  - Request Body: `OtpDtos.OtpVerifyRequest`
+    ```json
+    {
+      "to": "long",
+      "code": "string"
+    }
+    ```
+- `POST /api/auth/login`
+  - Description: User login.
+  - Request Body: `AuthDtos.LoginRequest`
+    ```json
+    {
+      "emailOrMobile": "string",
+      "password": "string"
+    }
+    ```
 
-### User
-- `POST /api/user/withdraw` - Request withdrawal
-- `POST /api/user/premium/request` - Request premium upgrade
-- `GET /api/user/all-users` - List all users (admin/debug)
+### OtpController (`/api/otp`)
 
-### Admin
-- `POST /api/admin/premium/approve` - Approve premium request
-- `POST /api/admin/premium/reject` - Reject premium request
-- `POST /api/admin/withdraw/approve` - Approve withdrawal request
-- `POST /api/admin/withdraw/reject` - Reject withdrawal request
+- `POST /api/otp/send`
+  - Description: Sends OTP to the specified recipient.
+  - Request Body: `OtpDtos.OtpSendRequest`
+    ```json
+    {
+      "to": "long",
+      "channel": "string" (optional, "whatsapp" | "email")
+    }
+    ```
+- `POST /api/otp/verify`
+  - Description: Verifies the provided OTP.
+  - Request Body: `OtpDtos.OtpVerifyRequest`
+    ```json
+    {
+      "to": "long",
+      "code": "string"
+    }
+    ```
 
-## Setup and Configuration
+### UserController (`/api/user`)
 
-### Prerequisites
-- Java 17+
-- Maven
-- MongoDB Atlas account
-- Gmail account (for email notifications)
-- Twilio account (for WhatsApp notifications)
+- `POST /api/user/withdraw`
+  - Description: Initiates a withdrawal request.
+  - Request Body: (Requires authentication) `UserDtos.WithdrawRequestDto`
+    ```json
+    {
+      "userId": "string",
+      "amount": "double"
+    }
+    ```
+- `POST /api/user/premium/request`
+  - Description: Requests premium membership.
+  - Request Body: (Requires authentication) `UserDtos.PremiumRequestDto`
+    ```json
+    {
+      "userId": "string"
+    }
+    ```
+- `GET /api/user/all-users`
+  - Description: Retrieves a list of all users.
+  - Request Body: (Requires authentication) None
 
-### Configuration
-The application uses the following configuration properties in `application.properties`:
+### AdminController (`/api/admin`)
 
-```properties
-# MongoDB Atlas connection
-spring.data.mongodb.uri=your_mongodb_uri
-spring.data.mongodb.database=referralwallet
+- `POST /api/admin/premium/approve`
+  - Description: Approves a premium membership request.
+  - Request Body: (Requires authentication, Admin role) `AdminDtos.ApproveRejectDto`
+    ```json
+    {
+      "userId": "string",
+      "withdrawRequestId": "string" (This field name seems incorrect for premium approval, should be premiumRequestId)
+    }
+    ```
+- `POST /api/admin/premium/reject`
+  - Description: Rejects a premium membership request.
+  - Request Body: (Requires authentication, Admin role) `AdminDtos.ApproveRejectDto`
+    ```json
+    {
+      "userId": "string",
+      "withdrawRequestId": "string" (This field name seems incorrect for premium rejection, should be premiumRequestId)
+    }
+    ```
+- `POST /api/admin/withdraw/approve`
+  - Description: Approves a withdrawal request.
+  - Request Body: (Requires authentication, Admin role) `AdminDtos.ApproveRejectDto`
+    ```json
+    {
+      "userId": "string",
+      "withdrawRequestId": "string"
+    }
+    ```
+- `POST /api/admin/withdraw/reject`
+  - Description: Rejects a withdrawal request.
+  - Request Body: (Requires authentication, Admin role) `AdminDtos.ApproveRejectDto`
+    ```json
+    {
+      "userId": "string",
+      "withdrawRequestId": "string"
+    }
+    ```
 
-# JWT
-app.jwt.secret=your_jwt_secret
-app.jwt.expirationMs=3600000
+## How to Run the Backend
 
-# Email (Gmail)
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your_email@gmail.com
-spring.mail.password=your_app_password
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
+1.  **Prerequisites:**
+    *   Java Development Kit (JDK) 17 or higher
+    *   Maven
+    *   MongoDB instance (local or cloud-based)
 
-# Twilio WhatsApp
-twilio.accountSid=your_twilio_account_sid
-twilio.authToken=your_twilio_auth_token
-twilio.whatsapp.from=whatsapp:+your_twilio_number
+2.  **Configuration:**
+    *   Create an `application.properties` file in `src/main/resources` (if it doesn't exist).
+    *   Configure your MongoDB connection and JWT secret in `application.properties`:
+        ```properties
+        spring.data.mongodb.uri=mongodb://localhost:27017/referralwallet
+        app.jwt.secret=YourSuperSecretJwtKeyThatIsAtLeast256BitsLong
+        app.jwt.expirationMs=86400000 # 24 hours
+        ```
+    *   If using Twilio for OTP, configure your Twilio credentials:
+        ```properties
+        twilio.accountSid=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        twilio.authToken=your_auth_token
+        twilio.phoneNumber=+1234567890
+        ```
 
-# OTP behavior
-otp.dev-echo=true  # Set to false in production
-```
+3.  **Build the Project:**
+    Navigate to the `referral-wallet-system` directory (e.g., `f:\scam\fullstack-gramflix\referral-wallet-system`) in your terminal and run:
+    ```bash
+    mvn clean install
+    ```
 
-### Running the Application
-```bash
-mvn spring-boot:run
-```
+4.  **Run the Application:**
+    ```bash
+    mvn spring-boot:run
+    ```
 
-## Security Notes
-- Replace default JWT secret in production
-- Use environment variables for sensitive credentials
-- Disable OTP echo in production by setting `otp.dev-echo=false`
-- Use app-specific passwords for Gmail
-- Secure MongoDB Atlas with IP whitelisting
+    The application will start on `http://localhost:8080` by default.
 
-## Development Notes
-- The system uses a two-step registration process with OTP verification
-- Referral bonuses are automatically credited when referred users register
-- Premium users can request withdrawals
-- All withdrawal and premium requests require admin approval
+## Complete Workflow
 
-## Project Structure
+1.  **User Registration & OTP Verification:**
+    *   User sends a `POST` request to `/api/auth/init-register` with email and password.
+    *   Backend sends an OTP to the provided email/mobile.
+    *   User sends a `POST` request to `/api/otp/verify` with the OTP and email/mobile.
+    *   If OTP is verified, user sends a `POST` request to `/api/auth/complete-register` to finalize registration.
 
-### Directory Structure
-```
-src
-├── main
-│   ├── java
-│   │   └── com
-│   │       └── example
-│   │           └── referralwallet
-│   │               ├── config
-│   │               ├── controller
-│   │               ├── dto
-│   │               ├── model
-│   │               ├── repository
-│   │               ├── security
-│   │               ├── service
-│   │               └── util
-│   └── resources
-│       └── templates
-└── test
-    └── java
-        └── com
-            └── example
-                └── referralwallet
-                    ├── config
-                    ├── controller
-                    ├── dto
-                    ├── model
-                    ├── repository
-                    ├── security
-                    ├── service
-                    └── util
-```
+2.  **User Login:**
+    *   User sends a `POST` request to `/api/auth/login` with email and password.
+    *   Backend returns a JWT token upon successful authentication.
 
-### Key Files
+3.  **Authenticated Requests:**
+    *   For all protected endpoints (not `/api/auth/**`, `/api/otp/**`, `/h2/**`, `/swagger-ui/**`, `/v3/api-docs/**`), include the JWT token in the `Authorization` header as a Bearer token.
 
-#### Main Application
-- `ReferralWalletApplication.java` - Main Spring Boot application class
+4.  **User Actions (e.g., Withdraw, Premium Request):**
+    *   Authenticated users can send `POST` requests to `/api/user/withdraw` or `/api/user/premium/request` with the required data.
 
-#### Configuration
-- `DataSeeder.java` - Initializes database with seed data
-- `EmailConfig.java` - Email service configuration
-- `JwtFilterConfig.java` - JWT filter configuration
-- `MongoConfig.java` - MongoDB configuration
-- `SecurityConfig.java` - Spring Security configuration
+5.  **Admin Actions:**
+    *   Users with Admin roles can approve/reject premium requests and withdrawal requests via `POST` requests to the respective `/api/admin/**` endpoints.
 
-#### Controllers
-- `AdminController.java` - Admin endpoints for approving/rejecting requests
-- `AuthController.java` - Authentication endpoints
-- `OtpController.java` - OTP generation and verification
-- `UserController.java` - User-related endpoints
+## Data Required for Each Route
 
-#### Models
-- `User.java` - User entity with wallet balance and referral info
-- `WalletTransaction.java` - Wallet transaction records
-- `WithdrawRequest.java` - Withdrawal request entity
-- `PremiumRequest.java` - Premium upgrade request entity
-- `Otp.java` - OTP entity for verification
-- `AuditLog.java` - System audit logs
+(Detailed in the "API Endpoints" section above, under "Request Body" for each endpoint.)
 
-#### Services
-- `AuthService.java` - Authentication and user registration
-- `UserService.java` - User management and wallet operations
-- `AdminService.java` - Admin operations
-- `ReferralService.java` - Referral bonus processing
-- `EmailService.java` - Email notifications
-- `TwilioService.java` - WhatsApp notifications
-- `OtpService.java` - OTP generation and verification
-
-#### Security
-- `JwtProvider.java` - JWT token generation and validation
-- `JwtAuthenticationFilter.java` - JWT authentication filter
-- `CustomUserDetailsService.java` - User details service for authentication
-
-#### Repositories
-- `UserRepository.java` - User data access
-- `WithdrawRequestRepository.java` - Withdrawal request data access
-- `PremiumRequestRepository.java` - Premium request data access
-- `OtpRepository.java` - OTP data access
-- `AuditLogRepository.java` - Audit log data access
-
-#### Utilities
-- `DateUtil.java` - Date formatting and manipulation
-- `PasswordEncoderUtil.java` - Password encoding utilities
-- `ResponseUtil.java` - Standardized API responses
-- `TokenGenerator.java` - OTP and token generation
-
-#### DTOs (Data Transfer Objects)
-- `AuthDtos.java` - Authentication request/response objects
-- `OtpDtos.java` - OTP request/response objects
-- `UserDtos.java` - User-related request/response objects
-- `AdminDtos.java` - Admin-related request/response objects
+This `Readme.md` provides a comprehensive overview for anyone looking to understand and run the backend of the Referral Wallet System.
