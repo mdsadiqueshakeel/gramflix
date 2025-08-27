@@ -3,21 +3,22 @@ package com.example.referralwallet.dto;
 import lombok.Data;
 
 public class OtpDtos {
+
     @Data
     public static class OtpSendRequest {
-        private long to;
-        private String channel;
+        private String to;
+        private String channel; // "whatsapp" or "email"
     }
 
     @Data
     public static class OtpSendResponse {
         private String message;
-        private String devEchoOtp;
+        private String devEchoOtp; // optional, only for dev
     }
 
     @Data
     public static class OtpVerifyRequest {
-        private long to;
+        private String to;
         private String code;
     }
 

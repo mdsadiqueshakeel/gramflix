@@ -32,6 +32,7 @@ public class OtpService {
     @Value("${otp.dev-echo:false}")
     private boolean devEcho;
 
+    // Hash the OTP using SHA-256
     private String hash(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -44,6 +45,7 @@ public class OtpService {
         }
     }
 
+    // Send OTP via WhatsApp or Email
     public OtpDtos.OtpSendResponse sendOtp(OtpDtos.OtpSendRequest req) {
         String channel = (req.getChannel() == null || req.getChannel().isBlank())
                 ? defaultChannel : req.getChannel().toLowerCase();
@@ -53,25 +55,25 @@ public class OtpService {
         }
 
         String code = tokenGenerator.numericOtp(6);
-        Optional<Otp> existingOtp = otpRepository.findByTo(req.getTo());
+        Optional<Otp> existingOtp = otpRepository.findByTo(Long.parseLong(req.getTo()));
         Otp otp = existingOtp.orElse(new Otp());
         otp.setTo(req.getTo());
         otp.setCodeHash(hash(code));
         otp.setExpiresAt(Date.from(Instant.now().plus(5, ChronoUnit.MINUTES)));
         otp.setAttempts(0);
         otpRepository.save(otp);
-        log.info("OTP saved for to: {}, codeHash: {}, Current time: {}, Expires at: {}", 
-                 req.getTo(), otp.getCodeHash(), Instant.now(), otp.getExpiresAt());
+
+        log.info("OTP saved for: {}, codeHash: {}, Expires at: {}", req.getTo(), otp.getCodeHash(), otp.getExpiresAt());
 
         String msg = "Your OTP is " + code + ". It expires in 5 minutes.";
-        String to = "whatsapp:+91" + req.getTo();
-        log.info("Sending WhatsApp to: {}", to);
+        String to = req.getTo();
+
         switch (channel) {
             case "whatsapp":
                 twilioService.sendWhatsApp(to, msg);
                 break;
             case "email":
-                emailService.sendSimple(String.valueOf(req.getTo()), "Your OTP Code", msg);
+                emailService.sendSimple(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
                 log.warn("Unknown channel '{}', falling back to WhatsApp", channel);
@@ -81,46 +83,45 @@ public class OtpService {
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
         resp.setMessage("OTP sent via " + channel);
         if (devEcho) resp.setDevEchoOtp(code);
+
         return resp;
     }
 
+    // Verify OTP
     public OtpDtos.OtpVerifyResponse verifyOtp(OtpDtos.OtpVerifyRequest req) {
-        log.info("Verifying OTP for to: {}, code: {}", req.getTo(), req.getCode());
-        Optional<Otp> o = otpRepository.findByTo(req.getTo());
+        log.info("Verifying OTP for: {}, code: {}", req.getTo(), req.getCode());
+        Optional<Otp> o = otpRepository.findByTo(Long.parseLong(req.getTo()));
         OtpDtos.OtpVerifyResponse resp = new OtpDtos.OtpVerifyResponse();
+
         if (o.isEmpty()) {
-            log.warn("No OTP found for to: {}", req.getTo());
             resp.setVerified(false);
             resp.setMessage("No OTP found");
             return resp;
         }
+
         Otp otp = o.get();
-        log.info("Found OTP: expiresAt: {}, codeHash: {}", otp.getExpiresAt(), otp.getCodeHash());
         if (otp.getExpiresAt().before(new Date())) {
-            otpRepository.deleteByTo(req.getTo());
-            log.warn("OTP expired for to: {}", req.getTo());
+            otpRepository.deleteByTo(Long.parseLong(req.getTo()));
             resp.setVerified(false);
             resp.setMessage("OTP expired");
             return resp;
         }
+
         if (otp.getCodeHash().equals(hash(req.getCode()))) {
-            otpRepository.deleteByTo(req.getTo());
-            log.info("OTP verified for to: {}", req.getTo());
+            otpRepository.deleteByTo(Long.parseLong(req.getTo()));
             resp.setVerified(true);
             resp.setMessage("OTP verified");
             return resp;
         } else {
             otp.setAttempts(otp.getAttempts() + 1);
             otpRepository.save(otp);
-            log.warn("Invalid OTP for to: {}, attempts: {}", req.getTo(), otp.getAttempts());
             resp.setVerified(false);
             resp.setMessage("Invalid OTP");
             return resp;
         }
     }
 
-    private boolean isValidPhoneNumber(long number) {
-        String numStr = String.valueOf(number);
-        return numStr.length() == 10 && numStr.matches("\\d{10}");
+    private boolean isValidPhoneNumber(String number) {
+        return number != null && number.matches("\\d{10}");
     }
 }

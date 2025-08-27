@@ -13,7 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,12 +27,62 @@ public class UserService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
+    // ==================== REFERRAL BONUS ====================
+    public void creditReferralBonus(String parentReferralId) {
+        System.out.println("🔗 [DEBUG] Starting referral bonus for parentReferralId: " + parentReferralId);
+
+        User parent = userRepository.findByReferralId(parentReferralId)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Wallet wallet = walletRepository.findByUserId(parent.getId())
+                .orElseThrow(() -> new RuntimeException("Wallet not found for parent"));
+
+        // Determine bonus amount based on parent type
+        double bonusAmount = parent.getUserType().equals("PREMIUM") ? 20 : 5;
+
+        // Update wallet
+        wallet.setWalletBalance(wallet.getWalletBalance() + bonusAmount);
+
+        // Update earnings
+        LocalDateTime now = LocalDateTime.now();
+        wallet.setTodaysEarning(wallet.getTodaysEarning() + bonusAmount);
+        wallet.setThisWeekEarning(wallet.getThisWeekEarning() + bonusAmount);
+        wallet.setTotalEarning(wallet.getTotalEarning() + bonusAmount);
+
+        // Add wallet transaction
+        WalletTransaction txn = new WalletTransaction(
+                "REFERRAL",
+                bonusAmount,
+                "Referral signup bonus",
+                now
+        );
+        wallet.getWalletHistory().add(txn);
+
+        wallet.setUpdatedAt(now);
+        walletRepository.save(wallet);
+
+        System.out.println("🎁 [DEBUG] Referral bonus of " + bonusAmount + " points credited to " + parent.getEmail());
+        System.out.println("📊 [DEBUG] Wallet Balance=" + wallet.getWalletBalance() +
+                ", Today=" + wallet.getTodaysEarning() +
+                ", ThisWeek=" + wallet.getThisWeekEarning() +
+                ", Total=" + wallet.getTotalEarning());
+    }
+
+    // ==================== WITHDRAW REQUEST ====================
     public void requestWithdraw(String userId, double amount) {
-        User user = userRepository.findById(userId).orElseThrow();
-        Wallet wallet = walletRepository.findByUserId(userId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Wallet not found"));
+
+        System.out.println("💵 [DEBUG] Withdraw request by " + user.getEmail() + ", amount=" + amount);
+
         if (user.getUserType().equals("NORMAL"))
-            throw new RuntimeException("User must be PREMIUM to withdraw");
-        if (wallet.getWalletBalance() < amount) throw new RuntimeException("Insufficient balance");
+            throw new RuntimeException("❌ User must be PREMIUM to withdraw");
+
+        if (!(amount == 100 || amount == 500 || amount == 1000))
+            throw new RuntimeException("❌ Withdraw amount must be 100, 500, or 1000");
+
+        if (wallet.getWalletBalance() < amount)
+            throw new RuntimeException("⚠️ Insufficient wallet balance");
 
         WithdrawRequest req = new WithdrawRequest();
         req.setUserId(userId);
@@ -42,30 +92,38 @@ public class UserService {
 
         emailService.sendSimple("admin@example.com", "Withdraw Request",
                 "User " + user.getEmail() + " requested withdraw of " + amount);
-        System.out.println("Withdraw request created for user " + user.getEmail() + " amount=" + amount);
+        System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
 
+    // ==================== PREMIUM REQUEST ====================
     public void applyPremiumRequest(String userId) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setPremiumRequestStatus("PENDING");
         userRepository.save(user);
-        emailService.sendSimple("admin@example.com", "Premium Upgrade Request", "User " + user.getEmail() + " requested premium.");
-        System.out.println("Premium request set PENDING for " + user.getEmail());
+
+        emailService.sendSimple("admin@example.com", "Premium Upgrade Request",
+                "User " + user.getEmail() + " requested premium.");
+        System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
     }
 
+    // ==================== APPROVE WITHDRAW (FOR ADMIN) ====================
     public void approveWithdraw(WithdrawRequest req) {
-        User user = userRepository.findById(req.getUserId()).orElseThrow();
-        Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow();
+        User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Wallet not found"));
+
         wallet.setWalletBalance(wallet.getWalletBalance() - req.getAmount());
-        wallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", new Date()));
+        wallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", LocalDateTime.now()));
         walletRepository.save(wallet);
+
         req.setStatus("APPROVED");
         withdrawRequestRepository.save(req);
-        System.out.println("Withdraw approved for " + user.getEmail() + " amount=" + req.getAmount());
+
+        System.out.println("✅ [DEBUG] Withdraw approved for " + user.getEmail() + ", amount=" + req.getAmount());
     }
 
+    // ==================== UPDATE PROFILE ====================
     public void updateProfile(String userId, UserDtos.ProfileUpdateRequest request) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setMobile(request.getMobile());
@@ -73,10 +131,12 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
         userRepository.save(user);
+        System.out.println("📝 [DEBUG] Profile updated for " + user.getEmail());
     }
 
+    // ==================== GET PROFILE ====================
     public UserDtos.ProfileResponse getProfile(String userId) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         UserDtos.ProfileResponse response = new UserDtos.ProfileResponse();
         response.setUserId(user.getId());
         response.setName(user.getName());
@@ -90,21 +150,25 @@ public class UserService {
         response.setReferredBy(user.getReferredBy());
         response.setWalletId(user.getWalletId());
         response.setChildren(user.getChildren());
+        System.out.println("🔍 [DEBUG] Fetched profile for " + user.getEmail());
         return response;
     }
 
+    // ==================== GET WALLET ====================
     public UserDtos.WalletResponse getWallet(String userId) {
-        Wallet wallet = walletRepository.findByUserId(userId).orElseThrow();
+        Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Wallet not found"));
         UserDtos.WalletResponse response = new UserDtos.WalletResponse();
         response.setWalletBalance(wallet.getWalletBalance());
         response.setTodaysEarning(wallet.getTodaysEarning());
         response.setThisWeekEarning(wallet.getThisWeekEarning());
         response.setTotalEarning(wallet.getTotalEarning());
+        System.out.println("💰 [DEBUG] Fetched wallet for userId: " + userId + ", Balance=" + wallet.getWalletBalance());
         return response;
     }
 
+    // ==================== GET CHILDREN ====================
     public UserDtos.ChildrenResponse getChildren(String userId) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         UserDtos.ChildrenResponse response = new UserDtos.ChildrenResponse();
         List<UserDtos.Child> children = new ArrayList<>();
         for (String childId : user.getChildren()) {
@@ -112,6 +176,7 @@ public class UserService {
             child.ifPresent(c -> children.add(new UserDtos.Child(c.getEmail(), c.getMobile())));
         }
         response.setChildren(children);
+        System.out.println("👶 [DEBUG] Fetched " + children.size() + " children for " + user.getEmail());
         return response;
     }
 }

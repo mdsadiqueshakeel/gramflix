@@ -2,24 +2,23 @@ package com.example.referralwallet.service;
 
 import com.example.referralwallet.dto.AuthDtos;
 import com.example.referralwallet.model.User;
-                import com.example.referralwallet.model.Wallet;
+import com.example.referralwallet.model.Wallet;
 import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.security.JwtProvider;
 import com.example.referralwallet.util.TokenGenerator;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthService {
+
+    private static final Logger logger = Logger.getLogger(AuthService.class.getName());
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
@@ -30,22 +29,36 @@ public class AuthService {
 
     private final ConcurrentHashMap<String, AuthDtos.RegisterRequest> tempUsers = new ConcurrentHashMap<>();
 
+    public AuthService(UserRepository userRepository,
+                       WalletRepository walletRepository,
+                       PasswordEncoder passwordEncoder,
+                       ReferralService referralService,
+                       JwtProvider jwtProvider,
+                       TokenGenerator tokenGenerator) {
+        this.userRepository = userRepository;
+        this.walletRepository = walletRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.referralService = referralService;
+        this.jwtProvider = jwtProvider;
+        this.tokenGenerator = tokenGenerator;
+    }
+
     public void tempRegister(AuthDtos.RegisterRequest request) {
-        log.debug("Temp registering user with email: {}", request.getEmail());
+        logger.log(Level.INFO, "Temp registering user with email: {0}", request.getEmail());
         Optional<User> existingUser = userRepository.findByEmailOrMobile(request.getEmail(), request.getMobile());
         if (existingUser.isPresent()) {
-            log.debug("User already exists with email: {}", request.getEmail());
+            logger.log(Level.WARNING, "User already exists with email: {0}", request.getEmail());
             throw new RuntimeException("User already exists");
         }
         tempUsers.put(request.getEmail(), request);
-        log.debug("Temp user stored for email: {}", request.getEmail());
+        logger.log(Level.INFO, "Temp user stored for email: {0}", request.getEmail());
     }
 
     public AuthDtos.RegisterResponse registerAfterOtp(String mobile, AuthDtos.RegisterRequest request) {
-        log.debug("Registering user after OTP for mobile: {}, email: {}", mobile, request.getEmail());
+        logger.log(Level.INFO, "Registering user after OTP for mobile: {0}, email: {1}", new Object[]{mobile, request.getEmail()});
         AuthDtos.RegisterRequest storedRequest = tempUsers.get(request.getEmail());
         if (storedRequest == null) {
-            log.debug("No pending registration found for email: {}", request.getEmail());
+            logger.log(Level.WARNING, "No pending registration found for email: {0}", request.getEmail());
             throw new RuntimeException("No pending registration found for " + request.getEmail());
         }
 
@@ -67,7 +80,7 @@ public class AuthService {
         }
 
         user = userRepository.save(user);
-        log.debug("User saved with ID: {}", user.getId());
+        logger.log(Level.INFO, "User saved with ID: {0}", user.getId());
 
         Wallet wallet = new Wallet();
         wallet.setUserId(user.getId());
@@ -76,56 +89,51 @@ public class AuthService {
         wallet.setThisWeekEarning(0.0);
         wallet.setTotalEarning(0.0);
         wallet = walletRepository.save(wallet);
-        log.debug("Wallet saved with ID: {}", wallet.getId());
+        logger.log(Level.INFO, "Wallet saved with ID: {0}", wallet.getId());
 
         user.setWalletId(wallet.getId());
         userRepository.save(user);
-        log.debug("User updated with wallet ID: {}", wallet.getId());
+        logger.log(Level.INFO, "User updated with wallet ID: {0}", wallet.getId());
 
         if (request.getReferralId() != null && !request.getReferralId().isEmpty()) {
-            final User finalUser = user; // Make user effectively final
+            final User finalUser = user;
             Optional<User> parentOpt = userRepository.findByReferralId(request.getReferralId());
             parentOpt.ifPresent(parent -> {
                 parent.getChildren().add(finalUser.getId());
                 userRepository.save(parent);
-                log.debug("Parent updated with child ID: {}", finalUser.getId());
+                logger.log(Level.INFO, "Parent updated with child ID: {0}", finalUser.getId());
             });
             referralService.creditParentBonus(request.getReferralId(), user.getId());
-            log.debug("Parent bonus credited for referral ID: {}", request.getReferralId());
+            logger.log(Level.INFO, "Parent bonus credited for referral ID: {0}", request.getReferralId());
         }
 
         tempUsers.remove(request.getEmail());
-        log.debug("Temp user removed for email: {}", request.getEmail());
+        logger.log(Level.INFO, "Temp user removed for email: {0}", request.getEmail());
 
         AuthDtos.RegisterResponse response = new AuthDtos.RegisterResponse();
         response.setMessage("User registered successfully after OTP verification");
         response.setUserId(user.getId());
-        log.debug("Registration response prepared with user ID: {}", user.getId());
+        logger.log(Level.INFO, "Registration response prepared with user ID: {0}", user.getId());
         return response;
     }
 
     public AuthDtos.LoginResponse login(AuthDtos.LoginRequest request) {
-        log.debug("Login attempt for email/mobile: {}", request.getEmailOrMobile());
+        logger.log(Level.INFO, "Login attempt for email/mobile: {0}", request.getEmailOrMobile());
         User user = userRepository.findByEmailOrMobile(request.getEmailOrMobile(), request.getEmailOrMobile())
                 .orElseThrow(() -> {
-                    log.debug("User not found for email/mobile: {}", request.getEmailOrMobile());
+                    logger.log(Level.WARNING, "User not found for email/mobile: {0}", request.getEmailOrMobile());
                     return new RuntimeException("User not found");
                 });
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.debug("Invalid password for user ID: {}", user.getId());
+            logger.log(Level.WARNING, "Invalid password for user ID: {0}", user.getId());
             throw new RuntimeException("Invalid password");
         }
 
         AuthDtos.LoginResponse response = new AuthDtos.LoginResponse();
         response.setUserId(user.getId());
         response.setToken(jwtProvider.generateToken(user.getId()));
-        log.debug("Login successful, token generated for user ID: {}", user.getId());
+        logger.log(Level.INFO, "Login successful, token generated for user ID: {0}", user.getId());
         return response;
-    }
-
-    public java.util.List<User> getAllUsers() {
-            log.debug("Fetching all users");
-        return userRepository.findAll();
     }
 }

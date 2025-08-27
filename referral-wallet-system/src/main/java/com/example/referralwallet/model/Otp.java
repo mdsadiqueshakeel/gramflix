@@ -11,9 +11,8 @@ import java.util.Date;
 public class Otp {
     @Id
     private String id;
-    private long to; // 10-digit phone number (e.g., 9156549575)
-    private String codeHash;
+    private String to;       // recipient (phone or email)
+    private String codeHash; // hashed OTP
     private Date expiresAt;
     private int attempts = 0;
-    private Date createdAt = new Date();
 }

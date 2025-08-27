@@ -1,40 +1,83 @@
 package com.example.referralwallet.controller;
 
-import com.example.referralwallet.service.AuthService;
-import com.example.referralwallet.service.UserService;
+import com.example.referralwallet.model.User;
+import com.example.referralwallet.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
-    private final AuthService authService;
+    private final UserRepository userRepository;
 
-    /** Withdraw request */
-    @PostMapping("/withdraw")
-    public ResponseEntity<?> withdraw(@RequestBody Map<String, Object> body) {
-        String userId = (String) body.get("userId");
-        double amount = Double.parseDouble(body.get("amount").toString());
-        userService.requestWithdraw(userId, amount);
-        return ResponseEntity.ok(Map.of("message", "Withdraw request created"));
-    }
+     // Get all users
+     @GetMapping
+     public ResponseEntity<List<User>> getAllUsers() {
+         List<User> users = userRepository.findAll();
+         return ResponseEntity.ok(users);
+     }
 
-    /** Premium upgrade request */
-    @PostMapping("/premium/request")
-    public ResponseEntity<?> premiumRequest(@RequestBody Map<String, String> body) {
-        userService.applyPremiumRequest(body.get("userId"));
-        return ResponseEntity.ok(Map.of("message", "Premium request sent"));
-    }
+     // Get user by ID
+     @GetMapping("/{id}")
+     public ResponseEntity<User> getUserById(@PathVariable String id) {
+         Optional<User> user = userRepository.findById(id);
+         return user.map(ResponseEntity::ok)
+                 .orElse(ResponseEntity.notFound().build());
+     }
 
-    /** List all users (admin/debug) */
-    @GetMapping("/all-users")
-    public ResponseEntity<?> getAllUsers() {
-        return ResponseEntity.ok(authService.getAllUsers());
-    }
+     // Update premium request
+     @PatchMapping("/premium-request")
+     public ResponseEntity<User> requestPremium(@RequestParam String mobile) {
+     Optional<User> optionalUser = userRepository.findByMobile(mobile);
+
+     if (optionalUser.isEmpty()) {
+         return ResponseEntity.notFound().build();
+     }
+
+     User user = optionalUser.get();
+     user.setPremiumRequestStatus("PENDING");
+     userRepository.save(user);
+
+     return ResponseEntity.ok(user);
+ }
+
+
+     // Update user details
+     @PutMapping("/{id}")
+     public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User updatedUser) {
+         Optional<User> optionalUser = userRepository.findById(id);
+
+         if (optionalUser.isEmpty()) {
+             return ResponseEntity.notFound().build();
+         }
+
+         User user = optionalUser.get();
+         user.setName(updatedUser.getName());
+         user.setEmail(updatedUser.getEmail());
+         user.setMobile(updatedUser.getMobile());
+         user.setUserType(updatedUser.getUserType());
+         user.setStatus(updatedUser.getStatus());
+         // Only update premium status if provided
+         user.setPremiumRequestStatus(updatedUser.getPremiumRequestStatus());
+
+         userRepository.save(user);
+         return ResponseEntity.ok(user);
+     }
+
+     // Delete user
+     @DeleteMapping("/{id}")
+     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+         if (!userRepository.existsById(id)) {
+             return ResponseEntity.notFound().build();
+         }
+
+         userRepository.deleteById(id);
+         return ResponseEntity.noContent().build();
+     }
 }

@@ -54,10 +54,12 @@ public class UserDtos {
     public static class Child {
         private String email;
         private String mobile;
+        private String userType;
 
         public Child(String email, String mobile) {
             this.email = email;
             this.mobile = mobile;
+            this.userType = userType;
         }
     }
 

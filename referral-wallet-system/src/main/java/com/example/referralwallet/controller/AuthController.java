@@ -7,38 +7,48 @@ import com.example.referralwallet.service.AuthService;
 import com.example.referralwallet.service.OtpService;
 import com.example.referralwallet.service.UserService;
 import com.example.referralwallet.util.SecurityUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
+
+    private static final Logger logger = Logger.getLogger(AuthController.class.getName());
 
     private final AuthService authService;
     private final OtpService otpService;
     private final UserService userService;
 
+    public AuthController(AuthService authService, OtpService otpService, UserService userService) {
+        this.authService = authService;
+        this.otpService = otpService;
+        this.userService = userService;
+    }
+
     // Initialize registration and send OTP
     @PostMapping("/init-register")
     public ResponseEntity<?> initRegister(@RequestBody AuthDtos.RegisterRequest request) {
         try {
-            System.out.println("📝 [DEBUG] init-register called for email: " + request.getEmail() + ", mobile: " + request.getMobile());
+            logger.log(Level.INFO, "📝 [DEBUG] init-register called for email: {0}, mobile: {1}",
+                    new Object[]{request.getEmail(), request.getMobile()});
+
             authService.tempRegister(request);
 
             OtpDtos.OtpSendRequest otpReq = new OtpDtos.OtpSendRequest();
-            otpReq.setTo(Long.parseLong(request.getMobile().replace("+91", "")));
+            otpReq.setTo(request.getMobile().replace("+91", ""));
 
-            System.out.println("📲 [DEBUG] Sending OTP to: " + otpReq.getTo());
+            logger.log(Level.INFO, "📲 [DEBUG] Sending OTP to: {0}", otpReq.getTo());
             var response = otpService.sendOtp(otpReq);
-            System.out.println("✅ [DEBUG] OTP sent successfully");
+            logger.log(Level.INFO, "✅ [DEBUG] OTP sent successfully");
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] init-register error: " + e.getMessage());
+            logger.log(Level.WARNING, "⚠️ [DEBUG] init-register error: " + e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -47,22 +57,33 @@ public class AuthController {
     @PostMapping("/complete-register")
     public ResponseEntity<?> completeRegistration(@RequestBody AuthDtos.RegisterRequest request) {
         try {
-            System.out.println("📝 [DEBUG] complete-register called for mobile: " + request.getMobile() + ", email: " + request.getEmail());
+            logger.log(Level.INFO, "📝 [DEBUG] complete-register called for mobile: {0}, email: {1}",
+                    new Object[]{request.getMobile(), request.getEmail()});
+
             AuthDtos.RegisterResponse regResp = authService.registerAfterOtp(request.getMobile(), request);
-            System.out.println("✅ [DEBUG] User registered successfully, userId: " + regResp.getUserId());
+            logger.log(Level.INFO, "✅ [DEBUG] User registered successfully, userId: {0}", regResp.getUserId());
+
+            // Referral Bonus Logic
+            if (request.getParentReferralId() != null && !request.getParentReferralId().isEmpty()) {
+                logger.log(Level.INFO, "🎁 [DEBUG] Crediting referral bonus to parentReferralId: {0}", request.getParentReferralId());
+                userService.creditReferralBonus(request.getParentReferralId());
+            }
+
             return ResponseEntity.ok(regResp);
+
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] complete-register error: " + e.getMessage());
-            return ResponseEntity.ok(Map.of("error", e.getMessage()));
+            logger.log(Level.WARNING, "⚠️ [DEBUG] complete-register error: " + e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     // Login
     @PostMapping("/login")
     public ResponseEntity<AuthDtos.LoginResponse> login(@RequestBody AuthDtos.LoginRequest request) {
-        System.out.println("🔑 [DEBUG] login attempt for email/mobile: " + request.getEmailOrMobile());
+        logger.log(Level.INFO, "🔑 [DEBUG] login attempt for email/mobile: {0}", request.getEmailOrMobile());
         var response = authService.login(request);
-        System.out.println("✅ [DEBUG] Login successful, userId: " + response.getUserId() + ", token: " + response.getToken());
+        logger.log(Level.INFO, "✅ [DEBUG] Login successful, userId: {0}, token: {1}",
+                new Object[]{response.getUserId(), response.getToken()});
         return ResponseEntity.ok(response);
     }
 
@@ -71,12 +92,12 @@ public class AuthController {
     public ResponseEntity<?> updateProfile(@RequestBody UserDtos.ProfileUpdateRequest request) {
         try {
             String userId = SecurityUtils.getCurrentUserId();
-            System.out.println("✏️ [DEBUG] updateProfile called for userId: " + userId);
+            logger.log(Level.INFO, "✏️ [DEBUG] updateProfile called for userId: {0}", userId);
             userService.updateProfile(userId, request);
-            System.out.println("✅ [DEBUG] Profile updated successfully for userId: " + userId);
+            logger.log(Level.INFO, "✅ [DEBUG] Profile updated successfully for userId: {0}", userId);
             return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] updateProfile error: " + e.getMessage());
+            logger.log(Level.WARNING, "⚠️ [DEBUG] updateProfile error: " + e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -86,12 +107,12 @@ public class AuthController {
     public ResponseEntity<?> getProfile() {
         try {
             String userId = SecurityUtils.getCurrentUserId();
-            System.out.println("👤 [DEBUG] getProfile called for userId: " + userId);
+            logger.log(Level.INFO, "👤 [DEBUG] getProfile called for userId: {0}", userId);
             UserDtos.ProfileResponse profile = userService.getProfile(userId);
-            System.out.println("✅ [DEBUG] Profile fetched successfully for userId: " + userId);
+            logger.log(Level.INFO, "✅ [DEBUG] Profile fetched successfully for userId: {0}", userId);
             return ResponseEntity.ok(Map.of("data", profile));
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] getProfile error: " + e.getMessage());
+            logger.log(Level.WARNING, "⚠️ [DEBUG] getProfile error: " + e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -101,12 +122,12 @@ public class AuthController {
     public ResponseEntity<?> getWallet() {
         try {
             String userId = SecurityUtils.getCurrentUserId();
-            System.out.println("💰 [DEBUG] getWallet called for userId: " + userId);
+            logger.log(Level.INFO, "💰 [DEBUG] getWallet called for userId: {0}", userId);
             UserDtos.WalletResponse wallet = userService.getWallet(userId);
-            System.out.println("✅ [DEBUG] Wallet fetched successfully for userId: " + userId);
+            logger.log(Level.INFO, "✅ [DEBUG] Wallet fetched successfully for userId: {0}", userId);
             return ResponseEntity.ok(Map.of("data", wallet));
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] getWallet error: " + e.getMessage());
+            logger.log(Level.WARNING, "⚠️ [DEBUG] getWallet error: " + e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -116,12 +137,13 @@ public class AuthController {
     public ResponseEntity<?> getChildren() {
         try {
             String userId = SecurityUtils.getCurrentUserId();
-            System.out.println("👶 [DEBUG] getChildren called for userId: " + userId);
+            logger.log(Level.INFO, "👶 [DEBUG] getChildren called for userId: {0}", userId);
             UserDtos.ChildrenResponse children = userService.getChildren(userId);
-            System.out.println("✅ [DEBUG] Children fetched successfully for userId: " + userId + ", count: " + children.getChildren().size());
+            logger.log(Level.INFO, "✅ [DEBUG] Children fetched successfully for userId: {0}, count: {1}",
+                    new Object[]{userId, children.getChildren().size()});
             return ResponseEntity.ok(Map.of("data", children));
         } catch (Exception e) {
-            System.out.println("⚠️ [DEBUG] getChildren error: " + e.getMessage());
+            logger.log(Level.WARNING, "⚠️ [DEBUG] getChildren error: " + e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

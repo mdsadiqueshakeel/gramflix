@@ -11,6 +11,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByMobile(String mobile);
 
     Optional<User> findByReferralId(String referralId);
+    
 
     // Utility method to find by email OR mobile
     default Optional<User> findByEmailOrMobile(String email, String mobile) {

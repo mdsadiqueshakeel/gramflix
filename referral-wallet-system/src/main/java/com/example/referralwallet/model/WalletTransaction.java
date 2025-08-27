@@ -1,7 +1,7 @@
 package com.example.referralwallet.model;
 
 import lombok.Data;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 public class WalletTransaction {
@@ -9,13 +9,17 @@ public class WalletTransaction {
     private String userId;
     private double amount;
     private String type; // e.g., "CREDIT", "DEBIT"
-    private String description;
-    private Date timestamp;
+    private String meta; // renamed description to meta for consistency
+    private LocalDateTime timestamp = LocalDateTime.now(); // single timestamp
 
-    public WalletTransaction(String type, double amount, String description, Date timestamp) {
+    public WalletTransaction() {
+        // default constructor
+    }
+
+    public WalletTransaction(String type, double amount, String meta, LocalDateTime timestamp) {
         this.type = type;
         this.amount = amount;
-        this.description = description;
+        this.meta = meta;
         this.timestamp = timestamp;
     }
 }

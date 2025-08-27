@@ -10,6 +10,7 @@ public class AuthDtos {
         private String mobile;
         private String password;
         private String referralId;
+       private String parentReferralId;
     }
 
     @Data
