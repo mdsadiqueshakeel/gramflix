@@ -47,11 +47,18 @@ public class OtpService {
 
     // Send OTP via WhatsApp or Email
     public OtpDtos.OtpSendResponse sendOtp(OtpDtos.OtpSendRequest req) {
+        String to = req.getTo();
         String channel = (req.getChannel() == null || req.getChannel().isBlank())
                 ? defaultChannel : req.getChannel().toLowerCase();
 
-        if ("whatsapp".equals(channel) && !isValidPhoneNumber(req.getTo())) {
-            throw new IllegalArgumentException("Invalid phone number for WhatsApp: " + req.getTo());
+
+        if (("whatsapp".equals(channel) || "sms".equals(channel))) {
+            if (!to.startsWith("+")) {
+                to = "+" + to;
+            }
+            if (!isValidPhoneNumber(to)) {
+                throw new IllegalArgumentException("Invalid phone number for " + channel + ": " + req.getTo());
+            }
         }
 
         String code = tokenGenerator.numericOtp(6);
@@ -66,18 +73,20 @@ public class OtpService {
         log.info("OTP saved for: {}, codeHash: {}, Expires at: {}", req.getTo(), otp.getCodeHash(), otp.getExpiresAt());
 
         String msg = "Your OTP is " + code + ". It expires in 5 minutes.";
-        String to = req.getTo();
 
         switch (channel) {
             case "whatsapp":
                 twilioService.sendWhatsApp(to, msg);
                 break;
+            case "sms":
+                twilioService.sendSms(to, msg);
+                break;
             case "email":
                 emailService.sendSimple(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
-                log.warn("Unknown channel '{}', falling back to WhatsApp", channel);
-                twilioService.sendWhatsApp(to, msg);
+                log.warn("Unknown channel '{}', falling back to SMS", channel);
+                twilioService.sendSms(to, msg);
         }
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
@@ -122,6 +131,8 @@ public class OtpService {
     }
 
     private boolean isValidPhoneNumber(String number) {
-        return number != null && number.matches("\\d{10}");
+        // E.164 format: +[country code][subscriber number including area code]
+        // Example: +12345678900
+        return number != null && number.matches("^\\+[1-9]\\d{1,14}$");
     }
 }

@@ -20,8 +20,19 @@ public class TwilioService {
     @Value("${twilio.auth-token}")
     private String authToken;
 
-    @Value("${twilio.whatsapp-from-number}")
-    private String whatsappFromNumber;
+    @Value("${twilio.sms-from-number}")
+    private String smsFromNumber;
+
+    public void sendSms(String to, String message) {
+        Twilio.init(accountSid, authToken);
+        logger.log(Level.INFO, "Sending SMS to: {0}", to);
+
+        Message messageObj = Message.creator(
+            new PhoneNumber(to),
+            new PhoneNumber(smsFromNumber),
+            message
+        ).create();
+    }
 
     public void sendWhatsApp(String to, String message) {
         Twilio.init(accountSid, authToken);
@@ -29,7 +40,7 @@ public class TwilioService {
 
         Message messageObj = Message.creator(
             new PhoneNumber(to),
-            new PhoneNumber(whatsappFromNumber),
+            new PhoneNumber(smsFromNumber), // Using smsFromNumber for WhatsApp as well, assuming it's a Twilio number
             message
         ).create();
 
