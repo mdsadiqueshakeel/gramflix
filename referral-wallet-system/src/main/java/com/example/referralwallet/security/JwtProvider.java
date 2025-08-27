@@ -1,5 +1,5 @@
 package com.example.referralwallet.security;
-
+import com.example.referralwallet.security.JwtProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

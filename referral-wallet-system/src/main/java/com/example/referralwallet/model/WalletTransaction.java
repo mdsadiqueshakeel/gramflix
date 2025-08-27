@@ -1,14 +1,21 @@
 package com.example.referralwallet.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import java.util.Date;
 
 @Data
-@AllArgsConstructor
 public class WalletTransaction {
-    private String type; // EARN | BONUS | WITHDRAW
+    private String id;
+    private String userId;
     private double amount;
-    private String meta; // JSON or text
-    private Date createdAt;
+    private String type; // e.g., "CREDIT", "DEBIT"
+    private String description;
+    private Date timestamp;
+
+    public WalletTransaction(String type, double amount, String description, Date timestamp) {
+        this.type = type;
+        this.amount = amount;
+        this.description = description;
+        this.timestamp = timestamp;
+    }
 }

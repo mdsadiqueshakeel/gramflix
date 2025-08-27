@@ -4,6 +4,7 @@ import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.WithdrawRequest;
 import com.example.referralwallet.model.WalletTransaction;
 import com.example.referralwallet.repository.UserRepository;
+import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.repository.WithdrawRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final WithdrawRequestRepository withdrawRepo;
+    private final WalletRepository walletRepository;
     private final EmailService emailService; // make sure only one EmailService exists
 
     public void approvePremium(String userId) {
@@ -26,11 +28,13 @@ public class AdminService {
 
         // credit parent bonus
         if (user.getReferredBy() != null) {
-            userRepository.findByReferralId(user.getReferredBy()).ifPresent(parent -> {
-                parent.setWalletBalance(parent.getWalletBalance() + 200);
-                parent.getWalletHistory().add(new WalletTransaction("BONUS", 200, "Child upgraded premium", new Date()));
-                userRepository.save(parent);
-                System.out.println("Parent bonus credited to " + parent.getEmail());
+            userRepository.findByReferralId(user.getReferredBy()).ifPresent(parentUser -> {
+                walletRepository.findByUserId(parentUser.getId()).ifPresent(parentWallet -> {
+                    parentWallet.setWalletBalance(parentWallet.getWalletBalance() + 200);
+                    parentWallet.getWalletHistory().add(new WalletTransaction("BONUS", 200, "Child upgraded premium", new Date()));
+                    walletRepository.save(parentWallet);
+                    System.out.println("Parent bonus credited to " + parentUser.getEmail());
+                });
             });
         }
 
@@ -51,10 +55,12 @@ public class AdminService {
         req.setStatus("APPROVED");
         withdrawRepo.save(req);
 
+        walletRepository.findByUserId(req.getUserId()).ifPresent(userWallet -> {
+            userWallet.setWalletBalance(userWallet.getWalletBalance() - req.getAmount());
+            userWallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", new Date()));
+            walletRepository.save(userWallet);
+        });
         User user = userRepository.findById(req.getUserId()).orElseThrow();
-        user.setWalletBalance(user.getWalletBalance() - req.getAmount());
-        user.getWalletHistory().add(new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", new Date()));
-        userRepository.save(user);
 
         emailService.sendSimple(user.getEmail(), "Withdraw Approved", "Your withdraw of " + req.getAmount() + " approved.");
         System.out.println("Withdraw request approved id=" + withdrawRequestId);

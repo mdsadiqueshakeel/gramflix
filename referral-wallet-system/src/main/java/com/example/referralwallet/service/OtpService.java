@@ -32,7 +32,6 @@ public class OtpService {
     @Value("${otp.dev-echo:false}")
     private boolean devEcho;
 
-    // SHA-256
     private String hash(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -49,14 +48,13 @@ public class OtpService {
         String channel = (req.getChannel() == null || req.getChannel().isBlank())
                 ? defaultChannel : req.getChannel().toLowerCase();
 
-        // Validate to parameter for whatsapp
         if ("whatsapp".equals(channel) && !isValidPhoneNumber(req.getTo())) {
             throw new IllegalArgumentException("Invalid phone number for WhatsApp: " + req.getTo());
         }
 
-        // 1) generate & store
         String code = tokenGenerator.numericOtp(6);
-        Otp otp = otpRepository.findByTo(req.getTo()).orElse(new Otp());
+        Optional<Otp> existingOtp = otpRepository.findByTo(req.getTo());
+        Otp otp = existingOtp.orElse(new Otp());
         otp.setTo(req.getTo());
         otp.setCodeHash(hash(code));
         otp.setExpiresAt(Date.from(Instant.now().plus(5, ChronoUnit.MINUTES)));
@@ -65,9 +63,8 @@ public class OtpService {
         log.info("OTP saved for to: {}, codeHash: {}, Current time: {}, Expires at: {}", 
                  req.getTo(), otp.getCodeHash(), Instant.now(), otp.getExpiresAt());
 
-        // 2) deliver
         String msg = "Your OTP is " + code + ". It expires in 5 minutes.";
-        String to = "whatsapp:+91" + req.getTo(); // Ensure E.164 format
+        String to = "whatsapp:+91" + req.getTo();
         log.info("Sending WhatsApp to: {}", to);
         switch (channel) {
             case "whatsapp":
@@ -124,6 +121,6 @@ public class OtpService {
 
     private boolean isValidPhoneNumber(long number) {
         String numStr = String.valueOf(number);
-        return numStr.length() == 10 && numStr.matches("\\d{10}"); // Validate 10-digit number
+        return numStr.length() == 10 && numStr.matches("\\d{10}");
     }
 }

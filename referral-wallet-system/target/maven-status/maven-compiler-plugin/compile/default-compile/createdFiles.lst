@@ -1,8 +1,8 @@
 com\example\referralwallet\security\JwtProvider.class
 com\example\referralwallet\controller\AuthController.class
-com\example\referralwallet\service\AuthService$TempRegistration.class
 com\example\referralwallet\util\PasswordEncoderUtil.class
 com\example\referralwallet\dto\AuthDtos$ForgotPasswordRequest.class
+com\example\referralwallet\dto\UserDtos$ProfileResponse.class
 com\example\referralwallet\ReferralWalletApplication.class
 com\example\referralwallet\dto\AuthDtos$ResetPasswordRequest.class
 com\example\referralwallet\dto\OtpDtos$OtpVerifyResponse.class
@@ -19,6 +19,8 @@ com\example\referralwallet\util\DateUtil.class
 com\example\referralwallet\config\JwtFilterConfig.class
 com\example\referralwallet\config\SecurityConfig.class
 com\example\referralwallet\model\WalletTransaction.class
+com\example\referralwallet\dto\UserDtos$ChildrenResponse.class
+com\example\referralwallet\model\Wallet.class
 com\example\referralwallet\dto\AdminDtos.class
 com\example\referralwallet\controller\UserController.class
 com\example\referralwallet\dto\AuthDtos$RegisterRequest.class
@@ -43,10 +45,14 @@ com\example\referralwallet\service\UserService.class
 com\example\referralwallet\util\TokenGenerator.class
 com\example\referralwallet\model\AuditLog.class
 com\example\referralwallet\security\JwtAuthenticationFilter.class
+com\example\referralwallet\dto\UserDtos$WalletResponse.class
 com\example\referralwallet\dto\UserDtos$PremiumRequestDto.class
 com\example\referralwallet\repository\OtpRepository.class
+com\example\referralwallet\repository\WalletRepository.class
 com\example\referralwallet\config\MongoConfig.class
 com\example\referralwallet\dto\OtpDtos.class
 com\example\referralwallet\model\WithdrawRequest.class
 com\example\referralwallet\util\ResponseUtil.class
+com\example\referralwallet\dto\UserDtos$ProfileUpdateRequest.class
 com\example\referralwallet\model\Otp.class
+com\example\referralwallet\dto\UserDtos$Child.class
