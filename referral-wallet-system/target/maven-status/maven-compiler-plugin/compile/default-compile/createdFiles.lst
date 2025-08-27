@@ -9,6 +9,7 @@ com\example\referralwallet\dto\OtpDtos$OtpVerifyResponse.class
 com\example\referralwallet\repository\WithdrawRequestRepository.class
 com\example\referralwallet\service\EmailService.class
 com\example\referralwallet\dto\OtpDtos$OtpVerifyRequest.class
+com\example\referralwallet\util\SecurityUtils.class
 com\example\referralwallet\dto\AuthDtos$LoginRequest.class
 com\example\referralwallet\service\OtpService.class
 com\example\referralwallet\dto\UserDtos.class

@@ -26,29 +26,17 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No session for JWT
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/auth/login", // Explicitly permit login
-                    "/api/auth/init-register",
+                    "/api/auth/login",        // Allow login
+                    "/api/auth/init-register",// Allow registration
                     "/api/auth/complete-register",
-                    "/api/otp/**",
-                    "/api/auth/profile/**",
-                    "/api/auth/wallet/**",
-                    "/api/auth/children/**",
-                    "/api/user/withdraw",
-                    "/api/admin/premium/approve",
-                    "/api/admin/premium/reject",
-                    "/api/admin/withdraw/approve",
-                    "/api/admin/withdraw/reject",
-                    "/api/user/premium/request",
-                    "/api/user/all-users",
-                    "/api/auth/profile",
-                    "/h2/**",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/swagger-ui/**",         // Swagger
+                    "/v3/api-docs/**",
+                    "/h2/**"                  // H2 Console (if needed)
                 ).permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().authenticated() // EVERYTHING else needs JWT
             )
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {

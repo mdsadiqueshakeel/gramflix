@@ -17,55 +17,67 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    // This filter automatically processes JWT tokens for authenticated requests
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
         System.out.println("➡️ [DEBUG] Incoming request path: " + path);
 
-        // Explicitly skip login endpoint and other public endpoints
-        if (path.equals("/api/auth/login") || path.startsWith("/api/auth") || path.startsWith("/api/otp") ||
-            path.startsWith("/h2") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")) {
+        // ✅ Allow only login, registration, Swagger, and H2 console to bypass JWT
+        if (path.equals("/api/auth/login") ||
+            path.equals("/api/auth/init-register") ||
+            path.equals("/api/auth/complete-register") ||
+            path.startsWith("/swagger-ui") ||
+            path.startsWith("/v3/api-docs") ||
+            path.startsWith("/h2")) {
+
             System.out.println("✅ [DEBUG] Public endpoint, skipping JWT check for: " + path);
             filterChain.doFilter(request, response);
             return;
         }
 
+        // 🔒 Check Authorization Header
         String header = request.getHeader("Authorization");
         System.out.println("🔑 [DEBUG] Authorization header: " + header);
 
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            System.out.println("🧾 [DEBUG] JWT Token found: " + token);
+        if (header == null || !header.startsWith("Bearer ")) {
+            System.out.println("⚠️ [DEBUG] No valid Authorization header found");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
+            return;
+        }
 
-            try {
-                if (jwtProvider.validateToken(token)) {
-                    String userId = jwtProvider.getUserIdFromToken(token);
-                    System.out.println("✔️ [DEBUG] JWT valid, userId: " + userId);
+        String token = header.substring(7);
+        System.out.println("🧾 [DEBUG] JWT Token found: " + token);
 
-                    UserDetails userDetails = customUserDetailsService.loadUserById(userId);
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        try {
+            if (jwtProvider.validateToken(token)) {
+                String userId = jwtProvider.getUserIdFromToken(token);
+                System.out.println("✔️ [DEBUG] JWT valid, userId: " + userId);
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("🔓 [DEBUG] Authentication set in SecurityContext");
-                } else {
-                    System.out.println("❌ [DEBUG] Invalid JWT token");
-                }
-            } catch (Exception e) {
-                System.out.println("⚠️ [DEBUG] Error validating token: " + e.getMessage());
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token validation error: " + e.getMessage());
+                UserDetails userDetails = customUserDetailsService.loadUserById(userId);
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println("🔓 [DEBUG] Authentication set in SecurityContext");
+            } else {
+                System.out.println("❌ [DEBUG] Invalid JWT token");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
                 return;
             }
-        } else {
-            System.out.println("⚠️ [DEBUG] No JWT header found");
+        } catch (Exception e) {
+            System.out.println("⚠️ [DEBUG] Error validating token: " + e.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token validation error: " + e.getMessage());
+            return;
         }
 
         filterChain.doFilter(request, response);
