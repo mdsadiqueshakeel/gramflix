@@ -1,10 +1,15 @@
-import React from 'react';
-import ReferEarnPage from '@/components/ReferEarnPage';
+import React from "react";
+import ReferEarnPage from "@/components/ReferEarnPage";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 function ReferEarn() {
-    return ( <>
-    <ReferEarnPage />
-    </> );
+  return (
+    <>
+      <ProtectedRoute>
+        <ReferEarnPage />
+      </ProtectedRoute>
+    </>
+  );
 }
 
 export default ReferEarn;
