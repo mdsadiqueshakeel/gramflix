@@ -51,8 +51,9 @@ function LoginPage({ onNavigate, onLogin }) {
       if (!res.ok) throw new Error("Invalid credentials");
 
       const data = await res.json();
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
+      const token = (data && data.data && data.data.token) || data.token;
+      if (token) {
+        localStorage.setItem("authToken", token);
         // Dispatch custom event for navbar refresh
         window.dispatchEvent(new Event("loginSuccess"));
       }
