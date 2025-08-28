@@ -1,5 +1,13 @@
 package com.example.referralwallet.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.referralwallet.dto.UserDtos;
 import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.Wallet;
@@ -8,14 +16,8 @@ import com.example.referralwallet.model.WithdrawRequest;
 import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.repository.WithdrawRequestRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -164,12 +166,6 @@ public class UserService {
         response.setReferralId(user.getReferralId());
         response.setReferralLink(user.getReferralLink());
         response.setReferredBy(user.getReferredBy());
-        if (user.getReferredBy() != null && !user.getReferredBy().isEmpty()) {
-            userRepository.findById(user.getReferredBy()).ifPresent(parent -> {
-                response.setReferredByName(parent.getName());
-            });
-        }
-
         response.setWalletId(user.getWalletId());
         response.setChildren(user.getChildren());
         response.setCreatedAt(user.getCreatedAt());
@@ -196,12 +192,26 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         UserDtos.ChildrenResponse response = new UserDtos.ChildrenResponse();
         List<UserDtos.Child> children = new ArrayList<>();
+        int normalUsersCount = 0;
+        int premiumUsersCount = 0;
+
         for (String childId : user.getChildren()) {
             Optional<User> child = userRepository.findById(childId);
-            child.ifPresent(c -> children.add(new UserDtos.Child(c.getEmail(), c.getMobile(), c.getUserType(), c.getReferralLink())));
+            if (child.isPresent()) {
+                User c = child.get();
+                children.add(new UserDtos.Child(c.getName(), c.getEmail(), c.getMobile(), c.getUserType(), c.getReferralId(), c.getReferralLink()));
+                if ("NORMAL".equals(c.getUserType())) {
+                    normalUsersCount++;
+                } else if ("PREMIUM".equals(c.getUserType())) {
+                    premiumUsersCount++;
+                }
+            }
         }
         response.setChildren(children);
-        System.out.println("👶 [DEBUG] Fetched " + children.size() + " children for " + user.getEmail());
+        response.setTotalChildren(children.size());
+        response.setNormalUsers(normalUsersCount);
+        response.setPremiumUsers(premiumUsersCount);
+        System.out.println("👶 [DEBUG] Fetched " + children.size() + " children for " + user.getEmail() + ", Normal: " + normalUsersCount + ", Premium: " + premiumUsersCount);
         return response;
     }
 }

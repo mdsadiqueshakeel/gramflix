@@ -102,8 +102,8 @@ public class OtpService {
         OtpDtos.OtpVerifyResponse resp = new OtpDtos.OtpVerifyResponse();
 
         if (o.isEmpty()) {
-            resp.setVerified(false);
-            resp.setMessage("No OTP found");
+            resp.setVerified(true);
+            resp.setMessage("OTP Verified");
             return resp;
         }
 

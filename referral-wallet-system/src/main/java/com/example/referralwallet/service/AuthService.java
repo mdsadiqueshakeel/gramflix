@@ -82,7 +82,6 @@ public class AuthService {
             final User finalUser = user; // Declare user as effectively final
             parentUser.ifPresent(parent -> {
                 finalUser.setReferredBy(parent.getId());
-                finalUser.setReferredByName(parent.getName());
             });
         }
 

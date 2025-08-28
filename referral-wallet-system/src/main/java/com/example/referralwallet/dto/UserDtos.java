@@ -39,7 +39,6 @@ public class UserDtos {
         private String premiumRequestStatus;
         private String referralId;
         private String referredBy;
-        private String referredByName;
         private String walletId;
         private List<String> children;
         private java.time.LocalDateTime createdAt;
@@ -58,19 +57,23 @@ public class UserDtos {
 
     @Data
     public static class Child {
+        private String name;
         private String email;
         private String mobile;
         private String userType;
+        private String referralId;
         private String referralLink;
 
         public String getReferralLink() {
             return referralLink;
         }
 
-        public Child(String email, String mobile, String userType, String referralLink) {
+        public Child(String name, String email, String mobile, String userType, String referralId, String referralLink) {
+            this.name = name;
             this.email = email;
             this.mobile = mobile;
             this.userType = userType;
+            this.referralId = referralId;
             this.referralLink = referralLink;
         }
     }
@@ -78,5 +81,8 @@ public class UserDtos {
     @Data
     public static class ChildrenResponse {
         private List<Child> children;
+        private int totalChildren;
+        private int normalUsers;
+        private int premiumUsers;
     }
 }
