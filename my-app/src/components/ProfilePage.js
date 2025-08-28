@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import PremiumUpgradePopup from "./PremiumUpgradePopup";
 import PremiumContent from "./PremiumContent";
-import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, getPremiumStatus, updateUserProfile } from "@/lib/api";
 import { Crown } from "lucide-react";
 
 const menuItems = [
@@ -42,6 +42,10 @@ export default function ProfilePage() {
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [editErrors, setEditErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const formatDate = (isoString) => {
     if (!isoString) return "—";
@@ -76,6 +80,47 @@ export default function ProfilePage() {
     };
     loadProfile();
   }, []);
+
+  const openEdit = () => {
+    setEditForm({ name: userProfile?.name || "", email: userProfile?.email || "", password: "", confirmPassword: "" });
+    setEditErrors({});
+    setIsEditing(true);
+  };
+
+  const closeEdit = () => {
+    setIsEditing(false);
+    setEditErrors({});
+  };
+
+  const validateEdit = () => {
+    const errs = {};
+    if (!editForm.name.trim()) errs.name = "Name is required";
+    if (!editForm.email.trim()) errs.email = "Email is required";
+    if (editForm.password && editForm.password !== editForm.confirmPassword) {
+      errs.confirmPassword = "Passwords do not match";
+    }
+    setEditErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    if (!validateEdit()) return;
+    try {
+      setSaving(true);
+      const payload = { name: editForm.name, email: editForm.email };
+      if (editForm.password) payload.password = editForm.password;
+      await updateUserProfile(payload);
+      // refresh displayed profile
+      const refreshed = await fetchUserProfile();
+      setUserProfile(refreshed);
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -157,6 +202,9 @@ export default function ProfilePage() {
                   <Phone size={16} className="flex-shrink-0" />
                   <span>{userProfile?.mobile || "—"}</span>
                 </div>
+              </div>
+              <div className="mt-3">
+                <Button variant="outline" className="rounded-lg" onClick={openEdit}>Edit Profile</Button>
               </div>
             </div>
           </div>
@@ -244,6 +292,62 @@ export default function ProfilePage() {
             console.log('User upgraded to premium!');
           }}
         />
+      )}
+
+      {/* Edit Profile Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md p-6 shadow-strong border-border bg-card">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Edit Profile</h3>
+            <form onSubmit={submitEdit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className={`w-full h-11 px-3 rounded-lg bg-input-background border border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 ${editErrors.name ? 'border-destructive' : ''}`}
+                />
+                {editErrors.name && <p className="text-destructive text-xs">{editErrors.name}</p>}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className={`w-full h-11 px-3 rounded-lg bg-input-background border border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 ${editErrors.email ? 'border-destructive' : ''}`}
+                />
+                {editErrors.email && <p className="text-destructive text-xs">{editErrors.email}</p>}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">New Password</label>
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  placeholder="Leave blank to keep current password"
+                  className="w-full h-11 px-3 rounded-lg bg-input-background border border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Confirm Password</label>
+                <input
+                  type="password"
+                  value={editForm.confirmPassword}
+                  onChange={(e) => setEditForm({ ...editForm, confirmPassword: e.target.value })}
+                  className={`w-full h-11 px-3 rounded-lg bg-input-background border border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 ${editErrors.confirmPassword ? 'border-destructive' : ''}`}
+                />
+                {editErrors.confirmPassword && <p className="text-destructive text-xs">{editErrors.confirmPassword}</p>}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" className="flex-1 rounded-lg" onClick={closeEdit} disabled={saving}>Cancel</Button>
+                <Button type="submit" className="flex-1 rounded-lg" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+              </div>
+            </form>
+          </Card>
+        </div>
       )}
     </div>
   );

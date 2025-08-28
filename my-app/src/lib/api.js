@@ -87,3 +87,29 @@ export async function fetchChildrenSummary() {
   }
 }
 
+export async function updateUserProfile(payload) {
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    const res = await fetch("http://localhost:8080/api/auth/profile", {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+
+    if (!res.ok) throw new Error("Failed to update profile");
+    const json = await res.json();
+    return json && (json.data || json);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+}
+
