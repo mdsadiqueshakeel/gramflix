@@ -8,7 +8,7 @@ import { Textarea } from './ui/textarea'
 import { Card } from './ui/card'
 import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, fetchWalletSummary } from "@/lib/api";
 
 // interface WithdrawPageProps {
 //   onNavigate: (page: string) => void
@@ -20,13 +20,15 @@ function WithdrawPage({ onNavigate }) {
   const [withdrawalRequest, setWithdrawalRequest] = useState('')
   const [errors, setErrors] = useState ({})
   const [userProfile, setUserProfile] = useState(null);
+  const [walletSummary, setWalletSummary] = useState(null);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
 
-  const walletBalance = 2540
+  const walletBalance = walletSummary?.walletBalance ?? 0
   const earnings = {
-    today: 125,
-    thisWeek: 890,
-    total: 15240,
-    totalWithdrawal: 12700
+    today: walletSummary?.todaysEarning ?? 0,
+    thisWeek: walletSummary?.thisWeekEarning ?? 0,
+    total: walletSummary?.totalEarning ?? 0,
+    totalWithdrawal: walletSummary?.totalWithdrawal ?? 0,
   }
 
   // Fetch user profile
@@ -40,6 +42,24 @@ function WithdrawPage({ onNavigate }) {
       }
     };
     loadProfile();
+  }, []);
+
+  // Fetch wallet summary
+  useEffect(() => {
+    const loadWallet = async () => {
+      try {
+        setIsLoadingWallet(true);
+        const summary = await fetchWalletSummary();
+        // API shape: { data: { walletBalance, todaysEarning, thisWeekEarning, totalEarning } }
+        // fetchWalletSummary already unwraps to json.data
+        setWalletSummary(summary);
+      } catch (error) {
+        console.error("Error loading wallet summary:", error);
+      } finally {
+        setIsLoadingWallet(false);
+      }
+    };
+    loadWallet();
   }, []);
 
   const handleWithdrawal = (e) => {
@@ -74,27 +94,12 @@ function WithdrawPage({ onNavigate }) {
     { label: 'Today Earning', value: earnings.today, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'This Week', value: earnings.thisWeek, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
     { label: 'Total Earning', value: earnings.total, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: 'Total Withdrawn', value: earnings.totalWithdrawal, icon: Wallet, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { label: 'Total Withdraw', value: earnings.totalWithdrawal, icon: Wallet, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
   ]
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border px-4 py-4 shadow-subtle">
-        <div className="flex items-center space-x-4 max-w-2xl mx-auto">
-          <button 
-            onClick={() => router.push('/profile')}
-            className="p-2 -ml-2 text-muted-foreground hover:text-newzia-primary transition-colors rounded-lg hover:bg-accent"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Withdraw Funds</h1>
-            <p className="text-sm text-muted-foreground">Manage your earnings and withdrawals</p>
-          </div>
-        </div>
-      </header>
-
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Wallet Balance Card */}
         <Card className="p-6 bg-gradient-to-br from-newzia-primary to-newzia-primary-hover text-white border-0 shadow-strong">
@@ -104,7 +109,7 @@ function WithdrawPage({ onNavigate }) {
                 <Wallet className="h-5 w-5 text-white/80" />
                 <p className="text-white/80 font-medium">Available Balance</p>
               </div>
-              <p className="text-3xl font-bold">₹{walletBalance.toLocaleString()}</p>
+              <p className="text-3xl font-bold">{isLoadingWallet ? '—' : `₹${Number(walletBalance || 0).toLocaleString()}`}</p>
               <p className="text-white/80 text-sm">Ready for withdrawal</p>
             </div>
             <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">

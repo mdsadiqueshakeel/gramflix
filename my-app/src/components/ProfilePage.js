@@ -43,6 +43,16 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
+  const formatDate = (isoString) => {
+    if (!isoString) return "—";
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+    } catch {
+      return "—";
+    }
+  };
+
   const handleMenuClick = (action) => {
     if (typeof action === "string") {
       router.push(action); // navigate to Next.js route
@@ -202,19 +212,21 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-xs text-muted-foreground">Member since</span>
-                <p className="font-medium text-foreground">January 2024</p>
+                <p className="font-medium text-foreground">{formatDate(userProfile?.createdAt)}</p>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Account type</span>
-                <p className="font-medium text-newzia-primary">Premium</p>
+                <p className="font-medium text-newzia-primary">
+                  {getPremiumStatus(userProfile) === "PREMIUM" ? "Premium" : getPremiumStatus(userProfile) === "PENDING" ? "Pending" : "Normal"}
+                </p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Reading streak</span>
-                <p className="font-medium text-foreground">15 days</p>
+                <span className="text-xs text-muted-foreground">Status</span>
+                <p className="font-medium text-foreground">{userProfile?.status || "—"}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Points earned</span>
-                <p className="font-medium text-foreground">2,450</p>
+                <span className="text-xs text-muted-foreground">Referral ID</span>
+                <p className="font-medium text-foreground">{userProfile?.referralId || "—"}</p>
               </div>
             </div>
           </div>

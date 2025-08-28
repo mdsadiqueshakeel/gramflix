@@ -6,7 +6,7 @@ import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Card } from './ui/card'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft} from "lucide-react";
 
 // interface SignUpPageProps {
@@ -15,6 +15,7 @@ import { ArrowLeft} from "lucide-react";
 
 function SignUpPage({ onNavigate }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,6 +30,17 @@ function SignUpPage({ onNavigate }) {
   const [otp, setOtp] = useState('')
   const [errors, setErrors] = useState({})
 
+  // Prefill referral code from URL param `referralId`
+  React.useEffect(() => {
+    const referralId = searchParams?.get('referralId');
+    if (referralId) {
+      setFormData(prev => ({ ...prev, referCode: referralId }));
+      if (errors.referCode) {
+        setErrors(prev => ({ ...prev, referCode: '' }));
+      }
+    }
+  }, [searchParams])
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
@@ -42,6 +54,7 @@ function SignUpPage({ onNavigate }) {
     if (!formData.name.trim()) newErrors.name = 'Name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     if (!formData.mobile.trim()) newErrors.mobile = 'Mobile number is required'
+    if (!formData.referCode.trim()) newErrors.referCode = 'Referral code is required'
     if (!formData.password) newErrors.password = 'Password is required'
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match'
@@ -178,15 +191,17 @@ function SignUpPage({ onNavigate }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="referCode" className="text-sm font-medium text-muted-foreground">Referral Code (Optional)</Label>
+              <Label htmlFor="referCode" className="text-sm font-medium text-foreground">Referral Code</Label>
               <Input
                 id="referCode"
                 type="text"
                 placeholder="Enter referral code"
                 value={formData.referCode}
                 onChange={(e) => handleInputChange('referCode', e.target.value)}
-                className="h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl"
+                required
+                className={`h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${errors.referCode ? 'border-destructive' : ''}`}
               />
+              {errors.referCode && <p className="text-destructive text-sm mt-1">{errors.referCode}</p>}
             </div>
 
             <div className="space-y-2">
