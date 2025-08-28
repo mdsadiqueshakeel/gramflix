@@ -53,6 +53,8 @@ function LoginPage({ onNavigate, onLogin }) {
       const data = await res.json();
       if (data.token) {
         localStorage.setItem("authToken", data.token);
+        // Dispatch custom event for navbar refresh
+        window.dispatchEvent(new Event("loginSuccess"));
       }
 
       if (onLogin) onLogin();
