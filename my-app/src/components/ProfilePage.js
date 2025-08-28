@@ -181,9 +181,17 @@ export default function ProfilePage() {
           {/* Left Side - Profile Info */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
             {/* Avatar */}
-            <Avatar className="h-20 w-20 ring-2 ring-newzia-primary/20 shadow-moderate flex-shrink-0">
-              <AvatarImage src="/images/avatar_image.avif" alt={userProfile?.name || "User"} />
-              <AvatarFallback className="bg-gradient-to-br from-newzia-primary to-newzia-primary-hover text-white text-2xl font-bold">
+            <Avatar className={`h-20 w-20 ring-2 shadow-moderate flex-shrink-0 ${
+              getPremiumStatus(userProfile) === "PREMIUM" 
+                ? "ring-yellow-400 ring-4 shadow-lg shadow-yellow-400/25" 
+                : "ring-newzia-primary/20"
+            }`}>
+                        <AvatarImage src={getPremiumStatus(userProfile) === "PREMIUM" ? "/images/premium_avatar_image.avif" : "/images/avatar_image.avif"} alt= "User" />
+              <AvatarFallback className={`text-2xl font-bold ${
+                getPremiumStatus(userProfile) === "PREMIUM"
+                  ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white"
+                  : "bg-gradient-to-br from-newzia-primary to-newzia-primary-hover text-white"
+              }`}>
                 {profileLoading ? "..." : "U"}
               </AvatarFallback>
             </Avatar>
@@ -264,7 +272,11 @@ export default function ProfilePage() {
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Account type</span>
-                <p className="font-medium text-newzia-primary">
+                <p className={`font-medium ${
+                  getPremiumStatus(userProfile) === "PREMIUM" 
+                    ? "text-yellow-600" 
+                    : "text-newzia-primary"
+                }`}>
                   {getPremiumStatus(userProfile) === "PREMIUM" ? "Premium" : getPremiumStatus(userProfile) === "PENDING" ? "Pending" : "Normal"}
                 </p>
               </div>

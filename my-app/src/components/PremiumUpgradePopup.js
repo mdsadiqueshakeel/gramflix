@@ -86,8 +86,8 @@ export default function PremiumUpgradePopup({ isOpen, onClose, onUpgrade }) {
               const Icon = benefit.icon;
               return (
                 <div key={index} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-8 h-8 lg:w-12 lg:h-12 bg-newzia-primary/10 rounded-full flex items-center justify-center">
-                    <Icon size={16} className="text-newzia-primary lg:w-6 lg:h-6" />
+                  <div className="flex-shrink-0 w-8 h-8 lg:w-12 lg:h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                    <Icon size={16} className="text-yellow-600 lg:w-6 lg:h-6" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm lg:text-lg font-semibold text-foreground mb-1">
@@ -106,7 +106,7 @@ export default function PremiumUpgradePopup({ isOpen, onClose, onUpgrade }) {
            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 lg:p-6 rounded-lg mb-6">
              <div className="text-center">
                <div className="flex items-center justify-center space-x-2 mb-2">
-                 <span className="text-3xl lg:text-5xl font-bold text-foreground">₹499</span>
+                 <span className="text-3xl lg:text-5xl font-bold text-yellow-600">₹499</span>
                  <span className="text-sm lg:text-lg text-muted-foreground line-through">₹999</span>
                  <span className="text-xs lg:text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 lg:px-3 lg:py-2 rounded-full font-medium">
                    55% OFF

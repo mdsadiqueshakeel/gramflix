@@ -197,7 +197,11 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
 
         {/* Title Section */}
         <div className="mb-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Discover News</h2>
+          <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${
+            getPremiumStatus(userProfile) === "PREMIUM" 
+              ? "text-yellow-600" 
+              : "text-foreground"
+          }`}>Discover News</h2>
           <p className="text-muted-foreground text-sm md:text-base">
             Stay updated with the latest stories from around the world
           </p>
@@ -212,7 +216,9 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
                 variant={selectedCategory === category ? "default" : "secondary"}
                 className={`cursor-pointer whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex-shrink-0 ${
                   selectedCategory === category
-                    ? "bg-newzia-primary text-white hover:bg-newzia-primary-hover shadow-moderate"
+                    ? getPremiumStatus(userProfile) === "PREMIUM"
+                      ? "bg-yellow-600 text-white hover:bg-yellow-700 shadow-moderate"
+                      : "bg-newzia-primary text-white hover:bg-newzia-primary-hover shadow-moderate"
                     : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
                 onClick={() => setSelectedCategory(category)}
@@ -251,7 +257,11 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
                     <div className="flex items-center justify-between">
                       <Badge
                         variant="secondary"
-                        className="text-xs font-semibold text-newzia-primary bg-newzia-blue-50 dark:bg-newzia-blue-900/30 px-2 py-1 rounded-full"
+                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                          getPremiumStatus(userProfile) === "PREMIUM"
+                            ? "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30"
+                            : "text-newzia-primary bg-newzia-blue-50 dark:bg-newzia-blue-900/30"
+                        }`}
                       >
                         {article.category}
                       </Badge>
@@ -261,7 +271,11 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
                       </div>
                     </div>
 
-                    <h3 className="text-lg md:text-xl font-bold text-foreground leading-tight group-hover:text-newzia-primary transition-colors duration-200 line-clamp-2">
+                    <h3 className={`text-lg md:text-xl font-bold leading-tight transition-colors duration-200 line-clamp-2 ${
+                      getPremiumStatus(userProfile) === "PREMIUM"
+                        ? "text-foreground group-hover:text-yellow-600"
+                        : "text-foreground group-hover:text-newzia-primary"
+                    }`}>
                       {article.title}
                     </h3>
 

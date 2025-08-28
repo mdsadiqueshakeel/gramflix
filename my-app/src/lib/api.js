@@ -6,7 +6,7 @@ export async function fetchUserProfile() {
       return null;
     }
 
-    const res = await fetch("http://localhost:8080/api/auth/profile", {
+    const res = await fetch(`http://localhost:8080/api/auth/profile`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -48,7 +48,7 @@ export async function fetchWalletSummary() {
       return null;
     }
 
-    const res = await fetch("http://localhost:8080/api/auth/wallet", {
+    const res = await fetch(`http://localhost:8080/api/auth/wallet`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -71,7 +71,7 @@ export async function fetchChildrenSummary() {
       return null;
     }
 
-    const res = await fetch("http://localhost:8080/api/auth/children", {
+    const res = await fetch(`http://localhost:8080/api/auth/children`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -94,7 +94,7 @@ export async function updateUserProfile(payload) {
       throw new Error("Not authenticated");
     }
 
-    const res = await fetch("http://localhost:8080/api/auth/profile", {
+    const res = await fetch(`http://localhost:8080/api/auth/profile`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${token}`,

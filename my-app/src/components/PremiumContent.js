@@ -130,8 +130,8 @@ export default function PremiumContent({ onUpgradeClick }) {
           const Icon = benefit.icon;
           return (
             <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50">
-              <div className="flex-shrink-0 w-10 h-10 bg-newzia-primary/10 rounded-full flex items-center justify-center">
-                <Icon size={20} className="text-newzia-primary" />
+              <div className="flex-shrink-0 w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                <Icon size={20} className="text-yellow-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-foreground mb-1">
@@ -150,7 +150,7 @@ export default function PremiumContent({ onUpgradeClick }) {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg mb-6 border border-yellow-200 dark:border-yellow-800">
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-3">
-            <span className="text-4xl font-bold text-foreground">₹449</span>
+            <span className="text-4xl font-bold text-yellow-600">₹449</span>
             <span className="text-lg text-muted-foreground line-through">₹999</span>
             <span className="text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full font-medium">
               55% OFF

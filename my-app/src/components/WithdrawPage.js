@@ -8,7 +8,7 @@ import { Textarea } from './ui/textarea'
 import { Card } from './ui/card'
 import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser, fetchWalletSummary } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus } from "@/lib/api";
 
 // interface WithdrawPageProps {
 //   onNavigate: (page: string) => void
@@ -102,7 +102,11 @@ function WithdrawPage({ onNavigate }) {
       {/* Header */}
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Wallet Balance Card */}
-        <Card className="p-6 bg-gradient-to-br from-newzia-primary to-newzia-primary-hover text-white border-0 shadow-strong">
+        <Card className={`p-6 text-white border-0 shadow-strong ${
+          getPremiumStatus(userProfile) === "PREMIUM"
+            ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
+            : "bg-gradient-to-br from-newzia-primary to-newzia-primary-hover"
+        }`}>
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -170,7 +174,11 @@ function WithdrawPage({ onNavigate }) {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-newzia-primary hover:bg-newzia-primary-hover text-white font-medium rounded-xl shadow-moderate transition-all duration-200"
+                className={`w-full h-12 text-white font-medium rounded-xl shadow-moderate transition-all duration-200 ${
+                  getPremiumStatus(userProfile) === "PREMIUM"
+                    ? "bg-yellow-600 hover:bg-yellow-700"
+                    : "bg-newzia-primary hover:bg-newzia-primary-hover"
+                }`}
               >
                 Submit Withdrawal Request
               </Button>
@@ -192,7 +200,11 @@ function WithdrawPage({ onNavigate }) {
                 return (
                   <div key={index} className={`p-4 rounded-xl border border-border hover:border-newzia-primary/30 transition-all duration-200 ${item.bg}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <Icon className={`h-5 w-5 ${item.color}`} />
+                      <Icon className={`h-5 w-5 ${
+                        getPremiumStatus(userProfile) === "PREMIUM" 
+                          ? "text-yellow-600" 
+                          : item.color
+                      }`} />
                       <span className="text-xs text-muted-foreground">Last 24h</span>
                     </div>
                     <div className="space-y-1">
@@ -207,18 +219,30 @@ function WithdrawPage({ onNavigate }) {
         </Card>
 
         {/* Info Card */}
-        <Card className="p-4 bg-newzia-blue-50 dark:bg-newzia-gray-800 border-newzia-primary/30 shadow-moderate">
+        <Card className={`p-4 border-newzia-primary/30 shadow-moderate ${
+          getPremiumStatus(userProfile) === "PREMIUM"
+            ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400/30"
+            : "bg-newzia-blue-50 dark:bg-newzia-gray-800"
+        }`}>
           <div className="flex items-start space-x-3">
-            <div className="p-1 bg-newzia-primary/20 rounded-full mt-0.5">
-              <div className="w-2 h-2 bg-newzia-primary rounded-full"></div>
+            <div className={`p-1 rounded-full mt-0.5 ${
+              getPremiumStatus(userProfile) === "PREMIUM"
+                ? "bg-yellow-400/20"
+                : "bg-newzia-primary/20"
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                getPremiumStatus(userProfile) === "PREMIUM"
+                  ? "bg-yellow-600"
+                  : "bg-newzia-primary"
+              }`}></div>
             </div>
             <div className="space-y-2">
               <p className="font-medium text-foreground">Withdrawal Information</p>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Processing time: 2-5 business days</li>
+                <li>• Processing time: 1-24 business hours</li>
                 <li>• Minimum withdrawal: ₹100</li>
-                <li>• Service fee: 2% of withdrawal amount</li>
-                <li>• Maximum per day: ₹50,000</li>
+                <li>• TDS Charges: 5% of withdrawal amount</li>
+                <li>• Admin Charges: 5% of withdrawal amount</li>
               </ul>
             </div>
           </div>
