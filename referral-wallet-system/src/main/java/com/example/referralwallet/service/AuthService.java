@@ -7,6 +7,7 @@ import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.security.JwtProvider;
 import com.example.referralwallet.util.TokenGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,9 @@ public class AuthService {
     private final ReferralService referralService;
     private final JwtProvider jwtProvider;
     private final TokenGenerator tokenGenerator;
+
+    @Value("${app.referral.signup-url}")
+    private String referralSignupUrl;
 
     private final ConcurrentHashMap<String, AuthDtos.RegisterRequest> tempUsers = new ConcurrentHashMap<>();
 
@@ -75,7 +79,7 @@ public class AuthService {
 
         String referralId = tokenGenerator.randomToken(8).toUpperCase();
         user.setReferralId(referralId);
-        user.setReferralLink("http://localhost:3000/signup?referralId=" + referralId);
+        user.setReferralLink(referralSignupUrl + referralId);
 
         if (request.getReferralId() != null && !request.getReferralId().isEmpty()) {
             Optional<User> parentUser = userRepository.findByReferralId(request.getReferralId());
