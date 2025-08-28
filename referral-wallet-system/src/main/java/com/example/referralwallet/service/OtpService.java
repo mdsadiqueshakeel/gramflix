@@ -78,14 +78,14 @@ public class OtpService {
         switch (channel) {
             case "whatsapp":
             case "sms":
-                msg91Service.sendOtp(to, code);
+                msg91Service.sendOtp(to, code, channel);
                 break;
             case "email":
                 emailService.sendSimple(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
                 log.warn("Unknown channel '{}', falling back to SMS", channel);
-                msg91Service.sendOtp(to, code);
+                msg91Service.sendOtp(to, code, channel);
         }
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();

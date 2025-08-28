@@ -10,8 +10,11 @@ public class MSG91Service {
     @Value("${msg91.authKey}")
     private String authKey;
 
-    @Value("${msg91.templateId}")
-    private String templateId;
+    @Value("${msg91.whatsappTemplateId}")
+    private String whatsappTemplateId;
+
+    @Value("${msg91.smsTemplateId}")
+    private String smsTemplateId;
 
     private final WebClient webClient;
 
@@ -19,8 +22,17 @@ public class MSG91Service {
         this.webClient = webClientBuilder.baseUrl("https://api.msg91.com/api/v5/").build();
     }
 
-    public void sendOtp(String mobileNumber, String otp) {
-        String url = "otp?template_id=" + templateId + "&mobile=" + mobileNumber + "&authkey=" + authKey + "&VAR1=" + otp;
+    public void sendOtp(String mobileNumber, String otp, String channel) {
+        String selectedTemplateId;
+        if ("whatsapp".equals(channel)) {
+            selectedTemplateId = whatsappTemplateId;
+        } else if ("sms".equals(channel)) {
+            selectedTemplateId = smsTemplateId;
+        } else {
+            // Fallback or error handling if channel is neither whatsapp nor sms
+            selectedTemplateId = smsTemplateId; // Default to SMS template if channel is unknown
+        }
+        String url = "otp?template_id=" + selectedTemplateId + "&mobile=" + mobileNumber + "&authkey=" + authKey + "&VAR1=" + otp;
 
         webClient.post()
                 .uri(url)
