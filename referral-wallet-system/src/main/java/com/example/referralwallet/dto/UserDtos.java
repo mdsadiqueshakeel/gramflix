@@ -22,7 +22,6 @@ public class UserDtos {
         private String userId;
         private String name;
         private String email;
-        private String mobile;
         private String password;
     }
 

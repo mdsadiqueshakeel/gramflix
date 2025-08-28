@@ -144,7 +144,6 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setMobile(request.getMobile());
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }

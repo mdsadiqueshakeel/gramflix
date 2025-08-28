@@ -46,32 +46,43 @@ public class AuthController {
         try {
             logger.log(Level.INFO, "📝 [DEBUG] init-register called for email: {0}, mobile: {1}",
                     new Object[]{request.getEmail(), request.getMobile()});
-
-            // Validate mobile number length
+    
+            // 1️⃣ Validate mobile number length
             if (request.getMobile() == null || request.getMobile().length() != 10) {
                 response = new ApiResponse(false, "Mobile number must be 10 digits");
                 return ResponseEntity.badRequest().body(response);
             }
-
-            // Validate referral if present
-            if (request.getReferral() != null && !request.getReferral().isEmpty()) {
-                if (!referralService.isValidReferralId(request.getReferral())) {
-                    response = new ApiResponse(false, "Invalid referral ID");
-                    return ResponseEntity.badRequest().body(response);
-                }
+    
+            // 2️⃣ MANDATORY: Validate referral ID
+            if (request.getReferral() == null || request.getReferral().isEmpty()) {
+                response = new ApiResponse(false, "Referral ID is required to register");
+                return ResponseEntity.badRequest().body(response);
             }
-
+    
+            // 3️⃣ Validate referral exists in DB
+            // The original code had a direct userRepository.findByReferralId call here.
+            // It's better to use the referralService.isValidReferralId method for consistency and proper validation.
+            if (!referralService.isValidReferralId(request.getReferral())) {
+                response = new ApiResponse(false, "Invalid referral ID");
+                return ResponseEntity.badRequest().body(response);
+            }
+    
+           
+    
+            // 5️⃣ Temp register user for OTP
             authService.tempRegister(request);
-
+    
+            // 6️⃣ Send OTP
             OtpDtos.OtpSendRequest otpReq = new OtpDtos.OtpSendRequest();
             otpReq.setTo(request.getMobile().replace("+91", ""));
-
             logger.log(Level.INFO, "📲 [DEBUG] Sending OTP to: {0}", otpReq.getTo());
             OtpDtos.OtpSendResponse otpSendResponse = otpService.sendOtp(otpReq);
             logger.log(Level.INFO, "✅ [DEBUG] OTP sent successfully");
-
+    
+            // 7️⃣ Response
             response = new ApiResponse(true, "OTP sent successfully", otpSendResponse.getDevEchoOtp());
             return ResponseEntity.ok(response);
+    
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] init-register error: " + e.getMessage(), e);
             response = new ApiResponse(false, e.getMessage());
@@ -89,12 +100,6 @@ public class AuthController {
 
             AuthDtos.RegisterResponse regResp = authService.registerAfterOtp(request.getMobile(), request);
             logger.log(Level.INFO, "✅ [DEBUG] User registered successfully, userId: {0}", regResp.getUserId());
-
-            // Referral Bonus Logic
-            if (request.getReferral() != null && !request.getReferral().isEmpty()) {
-                logger.log(Level.INFO, "🎁 [DEBUG] Crediting referral bonus to referralId: {0}", request.getReferral());
-                referralService.creditReferralBonus(request.getReferral(), regResp.getUserId());
-            }
 
             response = new ApiResponse(true, "Registration successful");
             return ResponseEntity.ok(response);
