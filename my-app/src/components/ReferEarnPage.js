@@ -6,15 +6,17 @@ import { Card } from './ui/card'
 import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink } from 'lucide-react'
 import { useRouter } from "next/navigation";
 import { fetchUserProfile, isPremiumUser } from "@/lib/api";
+import { fetchChildrenSummary } from "@/lib/api";
 // interface ReferEarnPageProps {
 //   onNavigate: (page: string) => void
 // }
 
 function ReferEarnPage({ onNavigate }) {
   const [copied, setCopied] = useState(false)
-  const referralLink = "https://newzia.app/ref/JD123456";
+  const [referralLink, setReferralLink] = useState("");
   const router = useRouter();
   const [userProfile, setUserProfile] = useState(null);
+  const [childrenSummary, setChildrenSummary] = useState(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink)
@@ -28,11 +30,27 @@ function ReferEarnPage({ onNavigate }) {
       try {
         const profile = await fetchUserProfile();
         setUserProfile(profile);
+        if (profile?.referralLink) {
+          setReferralLink(profile.referralLink);
+        }
       } catch (error) {
         console.error("Error loading profile:", error);
       }
     };
     loadProfile();
+  }, []);
+
+  // Fetch children summary
+  useEffect(() => {
+    const loadChildren = async () => {
+      try {
+        const summary = await fetchChildrenSummary();
+        setChildrenSummary(summary);
+      } catch (error) {
+        console.error("Error loading children summary:", error);
+      }
+    };
+    loadChildren();
   }, []);
 
   const beforePremiumPoints = [
@@ -95,7 +113,7 @@ function ReferEarnPage({ onNavigate }) {
             
             <div className="flex space-x-3">
               <div className="flex-1 p-4 bg-accent rounded-xl text-sm text-foreground break-all font-mono">
-                {referralLink}
+                {referralLink || "—"}
               </div>
               <Button 
                 onClick={handleCopyLink}
@@ -124,7 +142,7 @@ function ReferEarnPage({ onNavigate }) {
           <Card className="p-6 text-center border-border hover:border-newzia-primary/30 transition-all duration-200 shadow-moderate">
             <div className="space-y-2">
               <Users className="h-8 w-8 text-newzia-primary mx-auto" />
-              <div className="text-2xl font-bold text-foreground">42</div>
+              <div className="text-2xl font-bold text-foreground">{childrenSummary?.totalChildren ?? 0}</div>
               <div className="text-sm font-medium text-foreground">Total Referrals</div>
               <div className="text-xs text-muted-foreground">All time</div>
             </div>
@@ -133,12 +151,40 @@ function ReferEarnPage({ onNavigate }) {
           <Card className="p-6 text-center border-border hover:border-newzia-primary/30 transition-all duration-200 shadow-moderate">
             <div className="space-y-2">
               <Crown className="h-8 w-8 text-newzia-primary mx-auto" />
-              <div className="text-2xl font-bold text-foreground">8</div>
+              <div className="text-2xl font-bold text-foreground">{childrenSummary?.premiumUsers ?? 0}</div>
               <div className="text-sm font-medium text-foreground">Premium Referrals</div>
               <div className="text-xs text-muted-foreground">Extra rewards</div>
             </div>
           </Card>
         </div>
+
+        {/* Children List */}
+        {childrenSummary?.children?.length ? (
+          <Card className="border-border shadow-moderate">
+            <div className="p-6 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Your Referrals</h3>
+              <p className="text-sm text-muted-foreground">People who signed up with your link</p>
+            </div>
+            <div className="divide-y divide-border">
+              {childrenSummary.children.map((child, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between hover:bg-accent transition-colors">
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-foreground">{child.name || '—'}</div>
+                    <div className="text-xs text-muted-foreground">{child.email || '—'} · {child.mobile || '—'}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-semibold {child.userType === 'PREMIUM' ? 'text-newzia-primary' : 'text-muted-foreground'}">
+                      {child.userType || 'NORMAL'}
+                    </div>
+                    <a href={child.referralLink} target="_blank" rel="noreferrer" className="text-xs text-newzia-primary hover:underline">
+                      Invite link
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ) : null}
 
         {/* Before Premium Section */}
         <Card className="border-border shadow-moderate">

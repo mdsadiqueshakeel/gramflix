@@ -41,3 +41,49 @@ export function getPremiumStatus(userData) {
   }
 }
 
+export async function fetchWalletSummary() {
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    if (!token) {
+      return null;
+    }
+
+    const res = await fetch("http://localhost:8080/api/auth/wallet", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) throw new Error("Failed to load wallet summary");
+    const json = await res.json();
+    return json && (json.data || json);
+  } catch (error) {
+    console.error("Error fetching wallet summary:", error);
+    return null;
+  }
+}
+
+export async function fetchChildrenSummary() {
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    if (!token) {
+      return null;
+    }
+
+    const res = await fetch("http://localhost:8080/api/auth/children", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) throw new Error("Failed to load children summary");
+    const json = await res.json();
+    return json && (json.data || json);
+  } catch (error) {
+    console.error("Error fetching children summary:", error);
+    return null;
+  }
+}
+
