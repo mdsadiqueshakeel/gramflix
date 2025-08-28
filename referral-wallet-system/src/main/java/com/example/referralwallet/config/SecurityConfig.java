@@ -38,11 +38,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login", // Allow login
                                 "/api/auth/init-register", // Allow registration
+                                "/api/otp/verify", // Allow OTP verification
                                 "/api/auth/complete-register",
                                 "/swagger-ui/**", // Swagger
                                 "/v3/api-docs/**",
                                 "/h2/**" // H2 Console (if needed)
                         ).permitAll()
+                        .requestMatchers("/api/users/withdraw").authenticated() // Explicitly permit withdraw for authenticated users
                         .anyRequest().authenticated() // EVERYTHING else needs JWT
                 )
                 .exceptionHandling(exception -> exception

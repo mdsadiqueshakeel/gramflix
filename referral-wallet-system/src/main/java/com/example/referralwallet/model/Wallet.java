@@ -21,6 +21,7 @@ public class Wallet {
     private double todaysEarning = 0.0;
     private double thisWeekEarning = 0.0;
     private double totalEarning = 0.0;
+    private double totalWithdrawn = 0.0;
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();
 }

@@ -26,47 +26,7 @@ public class UserService {
     private final WalletRepository walletRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-
-    // ==================== REFERRAL BONUS ====================
-    public void creditReferralBonus(String parentReferralId) {
-        System.out.println("🔗 [DEBUG] Starting referral bonus for parentReferralId: " + parentReferralId);
-
-        User parent = userRepository.findByReferralId(parentReferralId)
-                .orElseThrow(() -> new RuntimeException("Parent not found"));
-
-        Wallet wallet = walletRepository.findByUserId(parent.getId())
-                .orElseThrow(() -> new RuntimeException("Wallet not found for parent"));
-
-        // Determine bonus amount based on parent type
-        double bonusAmount = parent.getUserType().equals("PREMIUM") ? 20 : 5;
-
-        // Update wallet
-        wallet.setWalletBalance(wallet.getWalletBalance() + bonusAmount);
-
-        // Update earnings
-        LocalDateTime now = LocalDateTime.now();
-        wallet.setTodaysEarning(wallet.getTodaysEarning() + bonusAmount);
-        wallet.setThisWeekEarning(wallet.getThisWeekEarning() + bonusAmount);
-        wallet.setTotalEarning(wallet.getTotalEarning() + bonusAmount);
-
-        // Add wallet transaction
-        WalletTransaction txn = new WalletTransaction(
-                "REFERRAL",
-                bonusAmount,
-                "Referral signup bonus",
-                now
-        );
-        wallet.getWalletHistory().add(txn);
-
-        wallet.setUpdatedAt(now);
-        walletRepository.save(wallet);
-
-        System.out.println("🎁 [DEBUG] Referral bonus of " + bonusAmount + " points credited to " + parent.getEmail());
-        System.out.println("📊 [DEBUG] Wallet Balance=" + wallet.getWalletBalance() +
-                ", Today=" + wallet.getTodaysEarning() +
-                ", ThisWeek=" + wallet.getThisWeekEarning() +
-                ", Total=" + wallet.getTotalEarning());
-    }
+    private final ReferralService referralService;
 
     // ==================== WITHDRAW REQUEST ====================
     public void requestWithdraw(String userId, double amount) {
@@ -90,20 +50,56 @@ public class UserService {
         req.setStatus("PENDING");
         withdrawRequestRepository.save(req);
 
-        emailService.sendSimple("admin@example.com", "Withdraw Request",
-                "User " + user.getEmail() + " requested withdraw of " + amount);
+        String withdrawApproveLink = "http://localhost:8080/api/admin/withdraw/approve/" + req.getId();
+        String withdrawRejectLink = "http://localhost:8080/api/admin/withdraw/reject/" + req.getId();
+        String withdrawEmailBody = "User " + user.getEmail() + " requested withdraw of " + amount + ".\n" +
+                "<a href=\"" + withdrawApproveLink + "\">Accept</a> | " +
+                "<a href=\"" + withdrawRejectLink + "\">Reject</a>";
+        emailService.sendSimple("admin@example.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
 
     // ==================== PREMIUM REQUEST ====================
-    public void applyPremiumRequest(String userId) {
+    public void applyPremiumRequest(String userId, String mobileNumber) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setPremiumRequestStatus("PENDING");
         userRepository.save(user);
 
-        emailService.sendSimple("admin@example.com", "Premium Upgrade Request",
-                "User " + user.getEmail() + " requested premium.");
+        String premiumApproveLink = "http://localhost:8080/api/admin/premium/approve/" + user.getId();
+        String premiumRejectLink = "http://localhost:8080/api/admin/premium/reject/" + user.getId();
+        String premiumEmailBody = "User " + user.getEmail() + " with mobile " + mobileNumber + " requested premium.\n" +
+                "<a href=\"" + premiumApproveLink + "\">Accept</a> | " +
+                "<a href=\"" + premiumRejectLink + "\">Reject</a>";
+        emailService.sendSimple("admin@example.com", "Premium Upgrade Request", premiumEmailBody);
         System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
+    }
+
+    // ==================== APPROVE PREMIUM (FOR ADMIN) ====================
+    public void approvePremiumRequest(String userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setUserType("PREMIUM");
+        user.setPremiumRequestStatus("APPROVED");
+        userRepository.save(user);
+
+        // Credit parent bonus if referred by someone
+        if (user.getReferredBy() != null && !user.getReferredBy().isEmpty()) {
+            referralService.creditPremiumUpgradeBonus(user.getReferredBy(), user.getId());
+        }
+
+        emailService.sendSimple(user.getEmail(), "Premium Upgrade Approved",
+                "Your premium upgrade request has been approved.");
+        System.out.println("✅ [DEBUG] Premium upgrade approved for " + user.getEmail());
+    }
+
+    // ==================== REJECT PREMIUM (FOR ADMIN) ====================
+    public void rejectPremiumRequest(String userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPremiumRequestStatus("REJECTED");
+        userRepository.save(user);
+
+        emailService.sendSimple(user.getEmail(), "Premium Upgrade Rejected",
+                "Your premium upgrade request has been rejected.");
+        System.out.println("❌ [DEBUG] Premium upgrade rejected for " + user.getEmail());
     }
 
     // ==================== APPROVE WITHDRAW (FOR ADMIN) ====================
@@ -112,13 +108,33 @@ public class UserService {
         Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Wallet not found"));
 
         wallet.setWalletBalance(wallet.getWalletBalance() - req.getAmount());
-        wallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", LocalDateTime.now()));
+        wallet.setTotalWithdrawn(wallet.getTotalWithdrawn() + req.getAmount());
+        wallet.getWalletHistory().add(new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now()));
         walletRepository.save(wallet);
 
         req.setStatus("APPROVED");
         withdrawRequestRepository.save(req);
 
         System.out.println("✅ [DEBUG] Withdraw approved for " + user.getEmail() + ", amount=" + req.getAmount());
+    }
+
+    // ==================== REJECT WITHDRAW (FOR ADMIN) ====================
+    public void rejectWithdraw(WithdrawRequest req) {
+        User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        // Optionally, you might want to revert the wallet balance or add a transaction for rejection
+        // For now, just update the status
+        req.setStatus("REJECTED");
+        withdrawRequestRepository.save(req);
+
+        emailService.sendSimple(user.getEmail(), "Withdraw Request Rejected",
+                "Your withdraw request for " + req.getAmount() + " has been rejected.");
+        System.out.println("❌ [DEBUG] Withdraw rejected for " + user.getEmail() + ", amount=" + req.getAmount());
+    }
+
+    // ==================== GET WITHDRAW REQUEST BY ID ====================
+    public WithdrawRequest getWithdrawRequestById(String requestId) {
+        return withdrawRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Withdraw request not found"));
     }
 
     // ==================== UPDATE PROFILE ====================

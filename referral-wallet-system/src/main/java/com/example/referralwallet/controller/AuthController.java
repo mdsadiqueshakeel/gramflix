@@ -5,6 +5,7 @@ import com.example.referralwallet.dto.OtpDtos;
 import com.example.referralwallet.dto.UserDtos;
 import com.example.referralwallet.service.AuthService;
 import com.example.referralwallet.service.OtpService;
+import com.example.referralwallet.service.ReferralService;
 import com.example.referralwallet.service.UserService;
 import com.example.referralwallet.util.SecurityUtils;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +24,13 @@ public class AuthController {
     private final AuthService authService;
     private final OtpService otpService;
     private final UserService userService;
+    private final ReferralService referralService;
 
-    public AuthController(AuthService authService, OtpService otpService, UserService userService) {
+    public AuthController(AuthService authService, OtpService otpService, UserService userService, ReferralService referralService) {
         this.authService = authService;
         this.otpService = otpService;
         this.userService = userService;
+        this.referralService = referralService;
     }
 
     // Initialize registration and send OTP
@@ -66,7 +69,7 @@ public class AuthController {
             // Referral Bonus Logic
             if (request.getParentReferralId() != null && !request.getParentReferralId().isEmpty()) {
                 logger.log(Level.INFO, "🎁 [DEBUG] Crediting referral bonus to parentReferralId: {0}", request.getParentReferralId());
-                userService.creditReferralBonus(request.getParentReferralId());
+                referralService.creditReferralBonus(request.getParentReferralId(), regResp.getUserId());
             }
 
             return ResponseEntity.ok(regResp);

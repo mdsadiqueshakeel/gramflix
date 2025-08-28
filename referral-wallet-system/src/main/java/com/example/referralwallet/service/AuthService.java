@@ -70,6 +70,8 @@ public class AuthService {
         user.setUserType("NORMAL");
         user.setStatus("ACTIVE");
         user.setPremiumRequestStatus("NONE");
+        user.setCreatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(java.time.LocalDateTime.now());
 
         String referralId = tokenGenerator.randomToken(8).toUpperCase();
         user.setReferralId(referralId);
@@ -103,7 +105,7 @@ public class AuthService {
                 userRepository.save(parent);
                 logger.log(Level.INFO, "Parent updated with child ID: {0}", finalUser.getId());
             });
-            referralService.creditParentBonus(request.getReferralId(), user.getId());
+            referralService.creditReferralBonus(request.getReferralId(), user.getId());
             logger.log(Level.INFO, "Parent bonus credited for referral ID: {0}", request.getReferralId());
         }
 

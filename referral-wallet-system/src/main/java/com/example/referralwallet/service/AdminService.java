@@ -20,48 +20,13 @@ public class AdminService {
     private final WithdrawRequestRepository withdrawRepo;
     private final WalletRepository walletRepository;
     private final EmailService emailService;
+    private final UserService userService;
 
     // Approve premium and credit parent if exists
     public void approvePremium(String userId) {
         System.out.println("🚀 [DEBUG] Approving premium for userId: " + userId);
-
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setUserType("PREMIUM");
-        user.setPremiumRequestStatus("APPROVED");
-        userRepository.save(user);
-        System.out.println("✅ [DEBUG] User upgraded to PREMIUM: " + user.getEmail());
-
-        // Credit parent bonus when child upgrades to premium
-        if (user.getReferredBy() != null) {
-            System.out.println("🔗 [DEBUG] User was referred by: " + user.getReferredBy());
-            userRepository.findByReferralId(user.getReferredBy()).ifPresentOrElse(parentUser -> {
-                walletRepository.findByUserId(parentUser.getId()).ifPresentOrElse(parentWallet -> {
-
-                    double bonusAmount = 200; // Fixed bonus when child upgrades
-                    parentWallet.setWalletBalance(parentWallet.getWalletBalance() + bonusAmount);
-                    parentWallet.setTodaysEarning(parentWallet.getTodaysEarning() + bonusAmount);
-                    parentWallet.setThisWeekEarning(parentWallet.getThisWeekEarning() + bonusAmount);
-                    parentWallet.setTotalEarning(parentWallet.getTotalEarning() + bonusAmount);
-
-                    parentWallet.getWalletHistory().add(
-                            new WalletTransaction("BONUS", bonusAmount, "Child upgraded premium", LocalDateTime.now())
-                    );
-                    walletRepository.save(parentWallet);
-
-                    System.out.println("💰 [DEBUG] Parent bonus of " + bonusAmount + " credited to " + parentUser.getEmail());
-                    System.out.println("📊 [DEBUG] Parent wallet updated: Balance=" + parentWallet.getWalletBalance() +
-                            ", Today=" + parentWallet.getTodaysEarning() +
-                            ", ThisWeek=" + parentWallet.getThisWeekEarning() +
-                            ", Total=" + parentWallet.getTotalEarning());
-
-                }, () -> System.out.println("⚠️ [DEBUG] Parent wallet not found for " + parentUser.getEmail()));
-            }, () -> System.out.println("⚠️ [DEBUG] Parent user not found with referralId: " + user.getReferredBy()));
-        } else {
-            System.out.println("ℹ️ [DEBUG] User was not referred by anyone");
-        }
-
-        emailService.sendSimple(user.getEmail(), "Premium Approved", "Your account is now premium.");
-        System.out.println("✉️ [DEBUG] Premium approval email sent to " + user.getEmail());
+        userService.approvePremiumRequest(userId);
+        System.out.println("✅ [DEBUG] Premium approval process completed for userId: " + userId);
     }
 
     // Reject premium request
@@ -85,8 +50,9 @@ public class AdminService {
 
         walletRepository.findByUserId(req.getUserId()).ifPresentOrElse(userWallet -> {
             userWallet.setWalletBalance(userWallet.getWalletBalance() - req.getAmount());
+            userWallet.setTotalWithdrawn(userWallet.getTotalWithdrawn() + req.getAmount());
             userWallet.getWalletHistory().add(
-                    new WalletTransaction("WITHDRAW", -req.getAmount(), "Withdraw approved", LocalDateTime.now())
+                    new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now())
             );
             walletRepository.save(userWallet);
 

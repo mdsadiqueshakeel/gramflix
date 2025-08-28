@@ -23,7 +23,7 @@ public class OtpService {
 
     private final OtpRepository otpRepository;
     private final TokenGenerator tokenGenerator;
-    private final TwilioService twilioService;
+    private final MSG91Service msg91Service;
     private final EmailService emailService;
 
     @Value("${otp.default-channel:whatsapp}")
@@ -52,14 +52,15 @@ public class OtpService {
                 ? defaultChannel : req.getChannel().toLowerCase();
 
 
-        if (("whatsapp".equals(channel) || "sms".equals(channel))) {
-            if (!to.startsWith("+")) {
-                to = "+" + to;
-            }
-            if (!isValidPhoneNumber(to)) {
-                throw new IllegalArgumentException("Invalid phone number for " + channel + ": " + req.getTo());
-            }
-        }
+        // No need for phone number validation here, MSG91 handles it internally
+        // if (("whatsapp".equals(channel) || "sms".equals(channel))) {
+        //     if (!to.startsWith("+")) {
+        //         to = "+" + to;
+        //     }
+        //     if (!isValidPhoneNumber(to)) {
+        //         throw new IllegalArgumentException("Invalid phone number for " + channel + ": " + req.getTo());
+        //     }
+        // }
 
         String code = tokenGenerator.numericOtp(6);
         Optional<Otp> existingOtp = otpRepository.findByTo(Long.parseLong(req.getTo()));
@@ -76,17 +77,15 @@ public class OtpService {
 
         switch (channel) {
             case "whatsapp":
-                twilioService.sendWhatsApp(to, msg);
-                break;
             case "sms":
-                twilioService.sendSms(to, msg);
+                msg91Service.sendOtp(to, code);
                 break;
             case "email":
                 emailService.sendSimple(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
                 log.warn("Unknown channel '{}', falling back to SMS", channel);
-                twilioService.sendSms(to, msg);
+                msg91Service.sendOtp(to, code);
         }
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
@@ -130,9 +129,5 @@ public class OtpService {
         }
     }
 
-    private boolean isValidPhoneNumber(String number) {
-        // E.164 format: +[country code][subscriber number including area code]
-        // Example: +12345678900
-        return number != null && number.matches("^\\+[1-9]\\d{1,14}$");
-    }
+
 }
