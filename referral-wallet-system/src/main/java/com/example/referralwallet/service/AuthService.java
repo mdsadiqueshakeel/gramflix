@@ -75,10 +75,15 @@ public class AuthService {
 
         String referralId = tokenGenerator.randomToken(8).toUpperCase();
         user.setReferralId(referralId);
-        user.setReferralLink("https://yourapp.com/register?ref=" + referralId);
+        user.setReferralLink("http://localhost:3000/signup?referralId=" + referralId);
 
         if (request.getReferralId() != null && !request.getReferralId().isEmpty()) {
-            user.setReferredBy(request.getReferralId());
+            Optional<User> parentUser = userRepository.findByReferralId(request.getReferralId());
+            final User finalUser = user; // Declare user as effectively final
+            parentUser.ifPresent(parent -> {
+                finalUser.setReferredBy(parent.getId());
+                finalUser.setReferredByName(parent.getName());
+            });
         }
 
         user = userRepository.save(user);
@@ -90,6 +95,7 @@ public class AuthService {
         wallet.setTodaysEarning(0.0);
         wallet.setThisWeekEarning(0.0);
         wallet.setTotalEarning(0.0);
+        wallet.setTotalWithdrawal(0.0);
         wallet = walletRepository.save(wallet);
         logger.log(Level.INFO, "Wallet saved with ID: {0}", wallet.getId());
 

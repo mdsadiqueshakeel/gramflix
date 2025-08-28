@@ -50,7 +50,7 @@ public class AdminService {
 
         walletRepository.findByUserId(req.getUserId()).ifPresentOrElse(userWallet -> {
             userWallet.setWalletBalance(userWallet.getWalletBalance() - req.getAmount());
-            userWallet.setTotalWithdrawn(userWallet.getTotalWithdrawn() + req.getAmount());
+            userWallet.setTotalWithdrawal(userWallet.getTotalWithdrawal() + req.getAmount());
             userWallet.getWalletHistory().add(
                     new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now())
             );

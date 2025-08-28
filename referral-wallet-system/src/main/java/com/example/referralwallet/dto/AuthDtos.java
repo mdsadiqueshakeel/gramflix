@@ -11,6 +11,14 @@ public class AuthDtos {
         private String password;
         private String referralId;
        private String parentReferralId;
+
+        public String getReferralId() {
+            return referralId;
+        }
+
+        public String getEmail() {
+            return email;
+        }
     }
 
     @Data

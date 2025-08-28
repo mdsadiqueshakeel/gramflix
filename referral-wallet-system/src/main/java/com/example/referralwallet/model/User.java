@@ -25,8 +25,26 @@ public class User {
     private String referralId;
     private String referralLink;
     private String referredBy;
+    private String referredByName;
     private String walletId; // Reference to Wallet
+    private double totalWithdrawal;
     private List<String> children = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setPremiumRequestStatus(String premiumRequestStatus) {
+        this.premiumRequestStatus = premiumRequestStatus;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
+    }
 }

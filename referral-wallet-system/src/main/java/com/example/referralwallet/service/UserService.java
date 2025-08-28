@@ -108,7 +108,7 @@ public class UserService {
         Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Wallet not found"));
 
         wallet.setWalletBalance(wallet.getWalletBalance() - req.getAmount());
-        wallet.setTotalWithdrawn(wallet.getTotalWithdrawn() + req.getAmount());
+        wallet.setTotalWithdrawal(wallet.getTotalWithdrawal() + req.getAmount());
         wallet.getWalletHistory().add(new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now()));
         walletRepository.save(wallet);
 
@@ -164,8 +164,16 @@ public class UserService {
         response.setReferralId(user.getReferralId());
         response.setReferralLink(user.getReferralLink());
         response.setReferredBy(user.getReferredBy());
+        if (user.getReferredBy() != null && !user.getReferredBy().isEmpty()) {
+            userRepository.findById(user.getReferredBy()).ifPresent(parent -> {
+                response.setReferredByName(parent.getName());
+            });
+        }
+
         response.setWalletId(user.getWalletId());
         response.setChildren(user.getChildren());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
         System.out.println("🔍 [DEBUG] Fetched profile for " + user.getEmail());
         return response;
     }
@@ -178,6 +186,7 @@ public class UserService {
         response.setTodaysEarning(wallet.getTodaysEarning());
         response.setThisWeekEarning(wallet.getThisWeekEarning());
         response.setTotalEarning(wallet.getTotalEarning());
+        response.setTotalWithdrawal(wallet.getTotalWithdrawal());
         System.out.println("💰 [DEBUG] Fetched wallet for userId: " + userId + ", Balance=" + wallet.getWalletBalance());
         return response;
     }
@@ -189,7 +198,7 @@ public class UserService {
         List<UserDtos.Child> children = new ArrayList<>();
         for (String childId : user.getChildren()) {
             Optional<User> child = userRepository.findById(childId);
-            child.ifPresent(c -> children.add(new UserDtos.Child(c.getEmail(), c.getMobile())));
+            child.ifPresent(c -> children.add(new UserDtos.Child(c.getEmail(), c.getMobile(), c.getUserType(), c.getReferralLink())));
         }
         response.setChildren(children);
         System.out.println("👶 [DEBUG] Fetched " + children.size() + " children for " + user.getEmail());

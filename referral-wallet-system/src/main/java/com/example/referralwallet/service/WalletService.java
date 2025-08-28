@@ -32,7 +32,7 @@ public class WalletService {
         wallet.setTodaysEarning(wallet.getTodaysEarning() + amount);
         wallet.setThisWeekEarning(wallet.getThisWeekEarning() + amount);
         wallet.setTotalEarning(wallet.getTotalEarning() + amount);
-
+        wallet.setTotalWithdrawal(wallet.getTotalWithdrawal()+amount);
         wallet.getWalletHistory().add(new WalletTransaction("BONUS", amount, meta, LocalDateTime.now()));
 
         wallet.setUpdatedAt(LocalDateTime.now());
