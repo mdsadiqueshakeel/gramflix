@@ -9,11 +9,14 @@ public class AuthDtos {
         private String email;
         private String mobile;
         private String password;
-        private String referralId;
-       private String parentReferralId;
+        private String referral;
 
-        public String getReferralId() {
-            return referralId;
+        public String getReferral() {
+            return referral;
+        }
+
+        public void setReferral(String referral) {
+            this.referral = referral;
         }
 
         public String getEmail() {

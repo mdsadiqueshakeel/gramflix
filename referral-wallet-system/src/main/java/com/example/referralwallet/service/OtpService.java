@@ -1,20 +1,22 @@
 package com.example.referralwallet.service;
 
-import com.example.referralwallet.dto.OtpDtos;
-import com.example.referralwallet.model.Otp;
-import com.example.referralwallet.repository.OtpRepository;
-import com.example.referralwallet.util.TokenGenerator;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.example.referralwallet.dto.OtpDtos;
+import com.example.referralwallet.model.Otp;
+import com.example.referralwallet.repository.OtpRepository;
+import com.example.referralwallet.util.TokenGenerator;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -90,7 +92,7 @@ public class OtpService {
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
         resp.setMessage("OTP sent via " + channel);
-        if (devEcho) resp.setDevEchoOtp(code);
+        resp.setDevEchoOtp(code);
 
         return resp;
     }

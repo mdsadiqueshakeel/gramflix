@@ -1,5 +1,14 @@
 package com.example.referralwallet.service;
 
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.referralwallet.dto.AuthDtos;
 import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.Wallet;
@@ -7,14 +16,6 @@ import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.security.JwtProvider;
 import com.example.referralwallet.util.TokenGenerator;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Service
 public class AuthService {
@@ -81,12 +82,11 @@ public class AuthService {
         user.setReferralId(referralId);
         user.setReferralLink(referralSignupUrl + referralId);
 
-        if (request.getReferralId() != null && !request.getReferralId().isEmpty()) {
-            Optional<User> parentUser = userRepository.findByReferralId(request.getReferralId());
-            final User finalUser = user; // Declare user as effectively final
-            parentUser.ifPresent(parent -> {
-                finalUser.setReferredBy(parent.getId());
-            });
+        if (request.getReferral() != null && !request.getReferral().isEmpty()) {
+            Optional<User> parentUser = userRepository.findByReferralId(request.getReferral());
+            if (parentUser.isPresent()) {
+                user.setReferredBy(parentUser.get().getId());
+            }
         }
 
         user = userRepository.save(user);
@@ -106,16 +106,16 @@ public class AuthService {
         userRepository.save(user);
         logger.log(Level.INFO, "User updated with wallet ID: {0}", wallet.getId());
 
-        if (request.getReferralId() != null && !request.getReferralId().isEmpty()) {
-            final User finalUser = user;
-            Optional<User> parentOpt = userRepository.findByReferralId(request.getReferralId());
-            parentOpt.ifPresent(parent -> {
-                parent.getChildren().add(finalUser.getId());
+        if (request.getReferral() != null && !request.getReferral().isEmpty()) {
+            Optional<User> parentOpt = userRepository.findByReferralId(request.getReferral());
+            if (parentOpt.isPresent()) {
+                User parent = parentOpt.get();
+                parent.getChildren().add(user.getId());
                 userRepository.save(parent);
-                logger.log(Level.INFO, "Parent updated with child ID: {0}", finalUser.getId());
-            });
-            referralService.creditReferralBonus(request.getReferralId(), user.getId());
-            logger.log(Level.INFO, "Parent bonus credited for referral ID: {0}", request.getReferralId());
+                logger.log(Level.INFO, "Parent updated with child ID: {0}", user.getId());
+            }
+            referralService.creditReferralBonus(request.getReferral(), user.getId());
+            logger.log(Level.INFO, "Parent bonus credited for referral ID: {0}", request.getReferral());
         }
 
         tempUsers.remove(request.getEmail());

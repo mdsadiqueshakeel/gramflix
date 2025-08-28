@@ -1,8 +1,8 @@
 package com.example.referralwallet.dto;
 
-import lombok.Data;
-
 import java.util.List;
+
+import lombok.Data;
 
 public class UserDtos {
 
@@ -38,7 +38,7 @@ public class UserDtos {
         private String status;
         private String premiumRequestStatus;
         private String referralId;
-        private String referredBy;
+        private String referredByName;
         private String walletId;
         private List<String> children;
         private java.time.LocalDateTime createdAt;

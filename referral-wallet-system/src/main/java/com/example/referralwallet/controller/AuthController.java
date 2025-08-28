@@ -1,5 +1,17 @@
 package com.example.referralwallet.controller;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.referralwallet.dto.ApiResponse;
 import com.example.referralwallet.dto.AuthDtos;
 import com.example.referralwallet.dto.OtpDtos;
 import com.example.referralwallet.dto.UserDtos;
@@ -8,12 +20,6 @@ import com.example.referralwallet.service.OtpService;
 import com.example.referralwallet.service.ReferralService;
 import com.example.referralwallet.service.UserService;
 import com.example.referralwallet.util.SecurityUtils;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,10 +41,25 @@ public class AuthController {
 
     // Initialize registration and send OTP
     @PostMapping("/init-register")
-    public ResponseEntity<?> initRegister(@RequestBody AuthDtos.RegisterRequest request) {
+    public ResponseEntity<ApiResponse> initRegister(@RequestBody AuthDtos.RegisterRequest request) {
+        ApiResponse response;
         try {
             logger.log(Level.INFO, "📝 [DEBUG] init-register called for email: {0}, mobile: {1}",
                     new Object[]{request.getEmail(), request.getMobile()});
+
+            // Validate mobile number length
+            if (request.getMobile() == null || request.getMobile().length() != 10) {
+                response = new ApiResponse(false, "Mobile number must be 10 digits");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validate referral if present
+            if (request.getReferral() != null && !request.getReferral().isEmpty()) {
+                if (!referralService.isValidReferralId(request.getReferral())) {
+                    response = new ApiResponse(false, "Invalid referral ID");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
 
             authService.tempRegister(request);
 
@@ -46,19 +67,22 @@ public class AuthController {
             otpReq.setTo(request.getMobile().replace("+91", ""));
 
             logger.log(Level.INFO, "📲 [DEBUG] Sending OTP to: {0}", otpReq.getTo());
-            var response = otpService.sendOtp(otpReq);
+            OtpDtos.OtpSendResponse otpSendResponse = otpService.sendOtp(otpReq);
             logger.log(Level.INFO, "✅ [DEBUG] OTP sent successfully");
 
+            response = new ApiResponse(true, "OTP sent successfully", otpSendResponse.getDevEchoOtp());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] init-register error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     // Complete registration after OTP verification
     @PostMapping("/complete-register")
-    public ResponseEntity<?> completeRegistration(@RequestBody AuthDtos.RegisterRequest request) {
+    public ResponseEntity<ApiResponse> completeRegistration(@RequestBody AuthDtos.RegisterRequest request) {
+        ApiResponse response;
         try {
             logger.log(Level.INFO, "📝 [DEBUG] complete-register called for mobile: {0}, email: {1}",
                     new Object[]{request.getMobile(), request.getEmail()});
@@ -67,87 +91,116 @@ public class AuthController {
             logger.log(Level.INFO, "✅ [DEBUG] User registered successfully, userId: {0}", regResp.getUserId());
 
             // Referral Bonus Logic
-            if (request.getParentReferralId() != null && !request.getParentReferralId().isEmpty()) {
-                logger.log(Level.INFO, "🎁 [DEBUG] Crediting referral bonus to parentReferralId: {0}", request.getParentReferralId());
-                referralService.creditReferralBonus(request.getParentReferralId(), regResp.getUserId());
+            if (request.getReferral() != null && !request.getReferral().isEmpty()) {
+                logger.log(Level.INFO, "🎁 [DEBUG] Crediting referral bonus to referralId: {0}", request.getReferral());
+                referralService.creditReferralBonus(request.getReferral(), regResp.getUserId());
             }
 
-            return ResponseEntity.ok(regResp);
+            response = new ApiResponse(true, "Registration successful");
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] complete-register error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     // Login
     @PostMapping("/login")
-    public ResponseEntity<AuthDtos.LoginResponse> login(@RequestBody AuthDtos.LoginRequest request) {
-        logger.log(Level.INFO, "🔑 [DEBUG] login attempt for email/mobile: {0}", request.getEmailOrMobile());
-        var response = authService.login(request);
-        logger.log(Level.INFO, "✅ [DEBUG] Login successful, userId: {0}, token: {1}",
-                new Object[]{response.getUserId(), response.getToken()});
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse> login(@RequestBody AuthDtos.LoginRequest request) {
+        ApiResponse apiResponse;
+        try {
+            logger.log(Level.INFO, "🔑 [DEBUG] login attempt for email/mobile: {0}", request.getEmailOrMobile());
+            AuthDtos.LoginResponse loginResponse = authService.login(request);
+            logger.log(Level.INFO, "✅ [DEBUG] Login successful, userId: {0}, token: {1}",
+                    new Object[]{loginResponse.getUserId(), loginResponse.getToken()});
+            apiResponse = new ApiResponse(true, "Login successful", loginResponse);
+            return ResponseEntity.ok(apiResponse);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "⚠️ [DEBUG] login error: " + e.getMessage(), e);
+            apiResponse = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(apiResponse);
+        }
     }
 
     // Update profile (token-based)
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(@RequestBody UserDtos.ProfileUpdateRequest request) {
+    public ResponseEntity<ApiResponse> updateProfile(@RequestBody UserDtos.ProfileUpdateRequest request) {
+        ApiResponse response;
         try {
             String userId = SecurityUtils.getCurrentUserId();
             logger.log(Level.INFO, "✏️ [DEBUG] updateProfile called for userId: {0}", userId);
             userService.updateProfile(userId, request);
             logger.log(Level.INFO, "✅ [DEBUG] Profile updated successfully for userId: {0}", userId);
-            return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+            response = new ApiResponse(true, "Profile updated successfully");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] updateProfile error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
+
+
     // Get profile (token-based)
     @GetMapping("/profile")
-    public ResponseEntity<?> getProfile() {
+    public ResponseEntity<ApiResponse> getProfile() {
+        ApiResponse response;
         try {
             String userId = SecurityUtils.getCurrentUserId();
             logger.log(Level.INFO, "👤 [DEBUG] getProfile called for userId: {0}", userId);
             UserDtos.ProfileResponse profile = userService.getProfile(userId);
             logger.log(Level.INFO, "✅ [DEBUG] Profile fetched successfully for userId: {0}", userId);
-            return ResponseEntity.ok(Map.of("data", profile));
+            response = new ApiResponse(true, "Profile fetched successfully", profile);
+            // You might want to add the profile data to the ApiResponse if needed
+            // response.setData(profile); // Assuming ApiResponse has a setData method
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] getProfile error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     // Get wallet (token-based)
     @GetMapping("/wallet")
-    public ResponseEntity<?> getWallet() {
+    public ResponseEntity<ApiResponse> getWallet() {
+        ApiResponse response;
         try {
             String userId = SecurityUtils.getCurrentUserId();
             logger.log(Level.INFO, "💰 [DEBUG] getWallet called for userId: {0}", userId);
             UserDtos.WalletResponse wallet = userService.getWallet(userId);
             logger.log(Level.INFO, "✅ [DEBUG] Wallet fetched successfully for userId: {0}", userId);
-            return ResponseEntity.ok(Map.of("data", wallet));
+            response = new ApiResponse(true, "Wallet fetched successfully", wallet);
+            // You might want to add the wallet data to the ApiResponse if needed
+            // response.setData(wallet); // Assuming ApiResponse has a setData method
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] getWallet error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     // Get children (token-based)
     @GetMapping("/children")
-    public ResponseEntity<?> getChildren() {
+    public ResponseEntity<ApiResponse> getChildren() {
+        ApiResponse response;
         try {
             String userId = SecurityUtils.getCurrentUserId();
-            logger.log(Level.INFO, "👶 [DEBUG] getChildren called for userId: {0}", userId);
+            logger.log(Level.INFO, "👨‍👩‍👧‍👦 [DEBUG] getChildren called for userId: {0}", userId);
             UserDtos.ChildrenResponse children = userService.getChildren(userId);
-            logger.log(Level.INFO, "✅ [DEBUG] Children fetched successfully for userId: {0}, count: {1}",
-                    new Object[]{userId, children.getChildren().size()});
-            return ResponseEntity.ok(Map.of("data", children));
+            logger.log(Level.INFO, "✅ [DEBUG] Children fetched successfully for userId: {0}", userId);
+            response = new ApiResponse(true, "Children fetched successfully", children);
+            // You might want to add the children data to the ApiResponse if needed
+            // response.setData(children); // Assuming ApiResponse has a setData method
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.WARNING, "⚠️ [DEBUG] getChildren error: " + e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 }

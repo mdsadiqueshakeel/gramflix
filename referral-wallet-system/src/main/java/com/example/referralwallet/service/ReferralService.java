@@ -51,6 +51,10 @@ public class ReferralService {
         });
     }
 
+    public boolean isValidReferralId(String referralId) {
+        return userRepository.findByReferralId(referralId).isPresent();
+    }
+
     private void updateWallet(Wallet wallet, double points, WalletTransaction.TransactionType type, String description) {
         wallet.setWalletBalance(wallet.getWalletBalance() + points);
         wallet.setTotalEarning(wallet.getTotalEarning() + points);

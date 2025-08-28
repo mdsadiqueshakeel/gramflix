@@ -165,7 +165,10 @@ public class UserService {
         response.setPremiumRequestStatus(user.getPremiumRequestStatus());
         response.setReferralId(user.getReferralId());
         response.setReferralLink(user.getReferralLink());
-        response.setReferredBy(user.getReferredBy());
+        if (user.getReferredBy() != null) {
+            User parent = userRepository.findById(user.getReferredBy()).orElse(null);
+            response.setReferredByName(parent != null ? parent.getName() : null);
+        }
         response.setWalletId(user.getWalletId());
         response.setChildren(user.getChildren());
         response.setCreatedAt(user.getCreatedAt());
