@@ -1,14 +1,18 @@
 "use client"; // add this if you're using Next.js app router
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { Home, Search, Bookmark, User, Clock, ExternalLink } from "lucide-react";
+import { Home, Search, Bookmark, User, Clock, ExternalLink, Crown } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { DarkModeToggle } from "./DarkModeToggle";
+import ProtectedRoute from "./ProtectedRoute";
+import PremiumUpgradePopup from "./PremiumUpgradePopup";
+import PremiumContent from "./PremiumContent";
+import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
 
 const categories = [
   "All",
@@ -81,6 +85,54 @@ const mockArticles = [
 
 function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [showPremiumPopup, setShowPremiumPopup] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Use the same authentication logic as Navbar
+  useEffect(() => {
+    const checkToken = () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+      setIsAuthed(Boolean(token && token.trim()));
+    };
+    checkToken();
+    const onStorage = (e) => {
+      if (e.key === "authToken") {
+        checkToken();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", checkToken);
+    window.addEventListener("authchange", checkToken);
+    const intervalId = window.setInterval(checkToken, 1000);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", checkToken);
+      window.removeEventListener("authchange", checkToken);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  // Fetch user profile when authenticated
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (isAuthed) {
+        setProfileLoading(true);
+        try {
+          const profile = await fetchUserProfile();
+          setUserProfile(profile);
+        } catch (error) {
+          console.error("Error loading profile:", error);
+        } finally {
+          setProfileLoading(false);
+        }
+      } else {
+        setUserProfile(null);
+      }
+    };
+    loadProfile();
+  }, [isAuthed]);
 
   const filteredArticles =
     selectedCategory === "All"
@@ -92,6 +144,57 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
 
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+
+        {isAuthed && getPremiumStatus(userProfile) === "NONE" && (
+          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-700 p-4 rounded-xl text-white shadow-inner flex-shrink-0 w-full lg:w-auto">
+            <div className="w-full">
+              <h3 className="text-base font-extrabold">Premium User</h3>
+              <p className="text-xs opacity-80 mb-3">Unlock exclusive features ✨</p>
+
+              <Button 
+                onClick={() => setShowPremiumPopup(true)}
+                className="w-full bg-white text-yellow-700 font-bold hover:bg-yellow-100 rounded-lg"
+              >
+                Upgrade to Premium
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isAuthed && getPremiumStatus(userProfile) === "PENDING" && (
+          <div className="bg-gradient-to-br from-blue-400 via-blue-500 to-blue-700 p-4 rounded-xl text-white shadow-inner flex-shrink-0 w-full lg:w-auto">
+            <div className="w-full flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold flex items-center">
+                  <Crown className="h-5 w-5 mr-2" />
+                  Premium Request
+                </h3>
+                <p className="text-xs opacity-80">Your premium request is under review ✨</p>
+              </div>
+              <div className="bg-white/20 px-3 py-1 rounded-full">
+                <span className="text-xs font-bold">PENDING</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isAuthed && getPremiumStatus(userProfile) === "PREMIUM" && (
+          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-700 p-4 rounded-xl text-white shadow-inner flex-shrink-0 w-full lg:w-auto">
+            <div className="w-full flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold flex items-center">
+                  <Crown className="h-5 w-5 mr-2" />
+                  Premium User
+                </h3>
+                <p className="text-xs opacity-80">You have access to all premium features ✨</p>
+              </div>
+              <div className="bg-white/20 px-3 py-1 rounded-full">
+                <span className="text-xs font-bold">ACTIVE</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Title Section */}
         <div className="mb-4">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Discover News</h2>
@@ -179,6 +282,19 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
           ))}
         </div>
       </div>
+      
+      {/* Premium Upgrade Popup */}
+      {getPremiumStatus(userProfile) === "NONE" && (
+        <PremiumUpgradePopup
+          isOpen={showPremiumPopup}
+          onClose={() => setShowPremiumPopup(false)}
+          onUpgrade={() => {
+            setShowPremiumPopup(false);
+            // Handle successful upgrade
+            console.log('User upgraded to premium!');
+          }}
+        />
+      )}
     </div>
   );
 }

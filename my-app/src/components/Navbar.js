@@ -25,15 +25,21 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
         checkToken();
       }
     };
+    const onLoginSuccess = () => {
+      // One-time refresh after login
+      setTimeout(() => {
+        checkToken();
+      }, 100);
+    };
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", checkToken);
     window.addEventListener("authchange", checkToken);
-    const intervalId = window.setInterval(checkToken, 1000);
+    window.addEventListener("loginSuccess", onLoginSuccess);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", checkToken);
       window.removeEventListener("authchange", checkToken);
-      window.clearInterval(intervalId);
+      window.removeEventListener("loginSuccess", onLoginSuccess);
     };
   }, []);
 
@@ -116,7 +122,7 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
                 className="h-9 w-9 cursor-pointer ring-2 ring-newzia-primary/20 hover:ring-newzia-primary/40 transition-all duration-200"
                 onClick={() => setMenuOpen((v) => !v)}
               >
-                <AvatarImage src="" />
+                 <AvatarImage src="/images/avatar_image.avif" alt= "User" />
                 <AvatarFallback className="bg-newzia-primary text-white text-sm font-medium">
                            {(profile && profile.name ? profile?.name.charAt(0) : "U")}
 
@@ -126,7 +132,7 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
                 <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-popover shadow-moderate p-3 z-50">
                   <div className="flex items-start space-x-3 px-1 pb-2">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src="" />
+                    <AvatarImage src="/images/avatar_image.avif" alt= "User" />
                       <AvatarFallback className="bg-newzia-primary text-white text-sm font-medium">
                         {(profile && profile.name ? profile?.name.charAt(0) : "U")}
                       </AvatarFallback>

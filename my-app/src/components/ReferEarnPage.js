@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink } from 'lucide-react'
 import { useRouter } from "next/navigation";
+import { fetchUserProfile, isPremiumUser } from "@/lib/api";
 // interface ReferEarnPageProps {
 //   onNavigate: (page: string) => void
 // }
@@ -13,12 +14,26 @@ function ReferEarnPage({ onNavigate }) {
   const [copied, setCopied] = useState(false)
   const referralLink = "https://newzia.app/ref/JD123456";
   const router = useRouter();
+  const [userProfile, setUserProfile] = useState(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  // Fetch user profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const beforePremiumPoints = [
     { refers: '1 Referral', points: '5 Points', description: 'Basic reward' },

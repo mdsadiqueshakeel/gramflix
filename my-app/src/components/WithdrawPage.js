@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -8,6 +8,7 @@ import { Textarea } from './ui/textarea'
 import { Card } from './ui/card'
 import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
 import { useRouter } from "next/navigation";
+import { fetchUserProfile, isPremiumUser } from "@/lib/api";
 
 // interface WithdrawPageProps {
 //   onNavigate: (page: string) => void
@@ -18,6 +19,7 @@ function WithdrawPage({ onNavigate }) {
   const [withdrawalAmount, setWithdrawalAmount] = useState('')
   const [withdrawalRequest, setWithdrawalRequest] = useState('')
   const [errors, setErrors] = useState ({})
+  const [userProfile, setUserProfile] = useState(null);
 
   const walletBalance = 2540
   const earnings = {
@@ -26,6 +28,19 @@ function WithdrawPage({ onNavigate }) {
     total: 15240,
     totalWithdrawal: 12700
   }
+
+  // Fetch user profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const handleWithdrawal = (e) => {
     e.preventDefault()
