@@ -154,6 +154,7 @@ function LoginPage({ onNavigate, onLogin }) {
               </div>
               <button
                 type="button"
+                onClick={() => router.push("/forgot-password")}
                 className="text-sm text-newzia-primary hover:text-newzia-primary-hover font-medium hover:underline transition-colors"
               >
                 Forgot Password?

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
-import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2 } from 'lucide-react'
+import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2, DollarSign, CheckCircle } from 'lucide-react'
 import { useRouter } from "next/navigation";
 import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
 import { fetchChildrenSummary } from "@/lib/api";
@@ -259,6 +259,89 @@ function ReferEarnPage({ onNavigate }) {
             </div>
           </Card>
         </div>
+
+        {/* Withdrawal Progress */}
+        {getPremiumStatus(userProfile) === "PREMIUM" && (
+          <Card className="border-border shadow-moderate">
+            <div className="p-6 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span>Withdrawal Progress</span>
+              </h3>
+              <p className="text-sm text-muted-foreground">Track your withdrawal eligibility based on referrals</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <div>
+                    <div className="font-medium text-foreground">₹100 Withdrawal</div>
+                    <div className="text-sm text-muted-foreground">Available for premium users</div>
+                  </div>
+                </div>
+                <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                  Available
+                </span>
+              </div>
+              
+              <div className={`flex items-center justify-between p-3 rounded-lg border ${
+                childrenSummary?.premiumUsers >= 1
+                  ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <Crown className={`h-5 w-5 ${
+                    childrenSummary?.premiumUsers >= 1 ? 'text-yellow-600' : 'text-gray-400'
+                  }`} />
+                  <div>
+                    <div className="font-medium text-foreground">₹900 Withdrawal</div>
+                    <div className="text-sm text-muted-foreground">
+                      {childrenSummary?.premiumUsers >= 1 
+                        ? 'Available after 1st premium referral' 
+                        : 'Requires 1 premium referral'
+                      }
+                    </div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  childrenSummary?.premiumUsers >= 1
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {childrenSummary?.premiumUsers >= 1 ? 'Available' : 'Locked'}
+                </span>
+              </div>
+              
+              <div className={`flex items-center justify-between p-3 rounded-lg border ${
+                childrenSummary?.totalChildren >= 2
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <Users className={`h-5 w-5 ${
+                    childrenSummary?.totalChildren >= 2 ? 'text-blue-600' : 'text-gray-400'
+                  }`} />
+                  <div>
+                    <div className="font-medium text-foreground">₹3000 Withdrawal</div>
+                    <div className="text-sm text-muted-foreground">
+                      {childrenSummary?.totalChildren >= 2 
+                        ? 'Available after 2+ referrals' 
+                        : `Requires ${2 - (childrenSummary?.totalChildren || 0)} more referrals`
+                      }
+                    </div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  childrenSummary?.totalChildren >= 2
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {childrenSummary?.totalChildren >= 2 ? 'Available' : 'Locked'}
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Children List */}
         {childrenSummary?.children?.length ? (

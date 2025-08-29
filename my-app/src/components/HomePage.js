@@ -302,10 +302,20 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
         <PremiumUpgradePopup
           isOpen={showPremiumPopup}
           onClose={() => setShowPremiumPopup(false)}
-          onUpgrade={() => {
+          onUpgrade={async (updatedProfile) => {
             setShowPremiumPopup(false);
-            // Handle successful upgrade
-            console.log('User upgraded to premium!');
+            if (updatedProfile) {
+              // Use the updated profile from polling
+              setUserProfile(updatedProfile);
+            } else {
+              // Fallback: refresh the profile
+              try {
+                const refreshed = await fetchUserProfile();
+                setUserProfile(refreshed);
+              } catch (error) {
+                console.error("Failed to refresh profile:", error);
+              }
+            }
           }}
         />
       )}

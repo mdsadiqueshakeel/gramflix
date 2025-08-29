@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { X, Check, Star, Zap, Shield, Crown } from "lucide-react";
+import { requestPremium, pollPremiumStatus } from "@/lib/api";
 
 const benefits = [
   {
@@ -30,19 +31,27 @@ const benefits = [
 
 export default function PremiumUpgradePopup({ isOpen, onClose, onUpgrade }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const handleUpgrade = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Submit the premium request
+      await requestPremium();
+      
+      // Start polling for status updates
+      setIsPolling(true);
+      const updatedProfile = await pollPremiumStatus(3, 2000); // Poll for 6 seconds (3 attempts × 2 seconds)
+      
       if (onUpgrade) {
-        onUpgrade();
+        onUpgrade(updatedProfile);
       }
     } catch (error) {
       console.error('Upgrade failed:', error);
+      alert(`Upgrade failed: ${error.message}`);
     } finally {
       setIsLoading(false);
+      setIsPolling(false);
     }
   };
 
@@ -102,33 +111,38 @@ export default function PremiumUpgradePopup({ isOpen, onClose, onUpgrade }) {
             })}
           </div>
 
-                     {/* Pricing */}
-           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 lg:p-6 rounded-lg mb-6">
-             <div className="text-center">
-               <div className="flex items-center justify-center space-x-2 mb-2">
-                 <span className="text-3xl lg:text-5xl font-bold text-yellow-600">₹499</span>
-                 <span className="text-sm lg:text-lg text-muted-foreground line-through">₹999</span>
-                 <span className="text-xs lg:text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 lg:px-3 lg:py-2 rounded-full font-medium">
-                   55% OFF
-                 </span>
-               </div>
-               <p className="text-xs lg:text-sm text-muted-foreground">
-                 One-time payment • Lifetime access
-               </p>
-             </div>
-           </div>
+          {/* Pricing */}
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 lg:p-6 rounded-lg mb-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <span className="text-3xl lg:text-5xl font-bold text-yellow-600">₹499</span>
+                <span className="text-sm lg:text-lg text-muted-foreground line-through">₹999</span>
+                <span className="text-xs lg:text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 lg:px-3 lg:py-2 rounded-full font-medium">
+                  55% OFF
+                </span>
+              </div>
+              <p className="text-xs lg:text-sm text-muted-foreground">
+                One-time payment • Lifetime access
+              </p>
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="space-y-3">
-                         <Button
-               onClick={handleUpgrade}
-               disabled={isLoading}
-               className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 lg:py-4 lg:text-lg rounded-lg transition-all duration-200 shadow-moderate hover:shadow-strong"
-             >
+            <Button
+              onClick={handleUpgrade}
+              disabled={isLoading || isPolling}
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 lg:py-4 lg:text-lg rounded-lg transition-all duration-200 shadow-moderate hover:shadow-strong"
+            >
               {isLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Processing...</span>
+                  <span>Submitting Request...</span>
+                </div>
+              ) : isPolling ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Checking Status...</span>
                 </div>
               ) : (
                 "Upgrade Now - ₹499"
