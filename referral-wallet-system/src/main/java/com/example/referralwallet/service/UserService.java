@@ -77,8 +77,8 @@ public class UserService {
         String withdrawApproveLink = "http://localhost:8080/api/admin/withdraw/approve/" + req.getId();
         String withdrawRejectLink = "http://localhost:8080/api/admin/withdraw/reject/" + req.getId();
         String withdrawEmailBody = "User " + user.getEmail() + " requested withdraw of " + amount + ".<br/><br/>" +
-                "<a href=\"" + withdrawApproveLink + "\" style=\"background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px;\">Accept</a> " +
-                "<a href=\"" + withdrawRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; margin-left: 10px;\">Reject</a>";
+                "<a href=\"" + withdrawApproveLink + "\" style=\"background-color: #4CAF50; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold;\">Accept</a> " +
+                "<a href=\"" + withdrawRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold; margin-left: 15px;\">Reject</a>";
         emailService.sendSimple("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
@@ -92,8 +92,8 @@ public class UserService {
         String premiumApproveLink = "http://localhost:8080/api/admin/premium/approve/" + user.getId();
         String premiumRejectLink = "http://localhost:8080/api/admin/premium/reject/" + user.getId();
         String premiumEmailBody = "User " + user.getEmail() + " with mobile " + mobileNumber + " requested premium.<br/><br/>" +
-                "<a href=\"" + premiumApproveLink + "\" style=\"background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px;\">Accept</a> " +
-                "<a href=\"" + premiumRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; margin-left: 10px;\">Reject</a>";
+                "<a href=\"" + premiumApproveLink + "\" style=\"background-color: #4CAF50; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold;\">Accept</a> " +
+                "<a href=\"" + premiumRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold; margin-left: 15px;\">Reject</a>";
         emailService.sendSimple("projecttesting897@gmail.com", "Premium Upgrade Request", premiumEmailBody);
         System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
     }
