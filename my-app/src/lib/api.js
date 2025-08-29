@@ -230,3 +230,25 @@ export async function requestWithdraw(amount) {
   }
 }
 
+export const fetchWithdrawRequests = async () => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/withdraw-requests`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${typeof window !== "undefined" ? localStorage.getItem("authToken") : null}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch withdrawal requests');
+    }
+
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching withdrawal requests:', error);
+    throw error;
+  }
+};
+

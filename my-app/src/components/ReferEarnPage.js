@@ -5,8 +5,8 @@ import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2, DollarSign, CheckCircle } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
-import { fetchChildrenSummary } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, getPremiumStatus, fetchChildrenSummary, fetchWithdrawRequests } from "@/lib/api";
+
 // interface ReferEarnPageProps {
 //   onNavigate: (page: string) => void
 // }
@@ -17,6 +17,7 @@ function ReferEarnPage({ onNavigate }) {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState(null);
   const [childrenSummary, setChildrenSummary] = useState(null);
+  const [withdrawRequests, setWithdrawRequests] = useState([]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink)
@@ -108,6 +109,19 @@ function ReferEarnPage({ onNavigate }) {
     loadChildren();
   }, []);
 
+  // Fetch withdrawal requests
+  useEffect(() => {
+    const loadWithdrawRequests = async () => {
+      try {
+        const requests = await fetchWithdrawRequests();
+        setWithdrawRequests(requests);
+      } catch (error) {
+        console.error("Error loading withdrawal requests:", error);
+      }
+    };
+    loadWithdrawRequests();
+  }, []);
+
   const beforePremiumPoints = [
     { refers: '1 Referral', points: '5 Points', description: 'Basic reward' },
     { refers: '25 Referrals', points: '125 Points', description: 'Achievement unlock' },
@@ -119,6 +133,28 @@ function ReferEarnPage({ onNavigate }) {
     { refers: '25 Referrals', points: '500 Points', description: 'Premium milestone' },
     { refers: '100 Referrals', points: '2000 Points', description: 'Champion level' },
   ]
+
+  // Get withdrawal status for specific amounts
+  const getWithdrawalStatus = (amount) => {
+    const request = withdrawRequests.find(req => req.amount === amount);
+    return request ? request.status : null;
+  };
+
+  // Get withdrawal date for specific amounts
+  const getWithdrawalDate = (amount) => {
+    const request = withdrawRequests.find(req => req.amount === amount);
+    return request ? new Date(request.updatedAt).toLocaleDateString() : null;
+  };
+
+  // Check if withdrawal is already claimed (approved)
+  const isWithdrawalClaimed = (amount) => {
+    return getWithdrawalStatus(amount) === "APPROVED";
+  };
+
+  // Check if withdrawal is pending
+  const isWithdrawalPending = (amount) => {
+    return getWithdrawalStatus(amount) === "PENDING";
+  };
 
   return (
     <div className="min-h-screen bg-background pb-[1rem]">
@@ -276,11 +312,24 @@ function ReferEarnPage({ onNavigate }) {
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <div>
                     <div className="font-medium text-foreground">₹100 Withdrawal</div>
-                    <div className="text-sm text-muted-foreground">Available for premium users</div>
+                    <div className="text-sm text-muted-foreground">
+                      {isWithdrawalClaimed(100) 
+                        ? `Claimed on ${getWithdrawalDate(100)}` 
+                        : isWithdrawalPending(100)
+                          ? 'Request pending approval'
+                          : 'Available for premium users'
+                      }
+                    </div>
                   </div>
                 </div>
-                <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full font-medium">
-                  Available
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  isWithdrawalClaimed(100)
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                    : isWithdrawalPending(100)
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                }`}>
+                  {isWithdrawalClaimed(100) ? 'Claimed' : isWithdrawalPending(100) ? 'Pending' : 'Available'}
                 </span>
               </div>
               
@@ -296,19 +345,27 @@ function ReferEarnPage({ onNavigate }) {
                   <div>
                     <div className="font-medium text-foreground">₹900 Withdrawal</div>
                     <div className="text-sm text-muted-foreground">
-                      {childrenSummary?.premiumUsers >= 1 
-                        ? 'Available after 1st premium referral' 
-                        : 'Requires 1 premium referral'
+                      {isWithdrawalClaimed(900)
+                        ? `Claimed on ${getWithdrawalDate(900)}`
+                        : isWithdrawalPending(900)
+                          ? 'Request pending approval'
+                          : childrenSummary?.premiumUsers >= 1 
+                            ? 'Available after 1st premium referral' 
+                            : 'Requires 1 premium referral'
                       }
                     </div>
                   </div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  childrenSummary?.premiumUsers >= 1
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  isWithdrawalClaimed(900)
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                    : isWithdrawalPending(900)
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : childrenSummary?.premiumUsers >= 1
+                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                 }`}>
-                  {childrenSummary?.premiumUsers >= 1 ? 'Available' : 'Locked'}
+                  {isWithdrawalClaimed(900) ? 'Claimed' : isWithdrawalPending(900) ? 'Pending' : childrenSummary?.premiumUsers >= 1 ? 'Available' : 'Locked'}
                 </span>
               </div>
               
@@ -324,19 +381,27 @@ function ReferEarnPage({ onNavigate }) {
                   <div>
                     <div className="font-medium text-foreground">₹3000 Withdrawal</div>
                     <div className="text-sm text-muted-foreground">
-                      {childrenSummary?.totalChildren >= 2 
-                        ? 'Available after 2+ referrals' 
-                        : `Requires ${2 - (childrenSummary?.totalChildren || 0)} more referrals`
+                      {isWithdrawalClaimed(3000)
+                        ? `Last claimed on ${getWithdrawalDate(3000)} (unlimited)`
+                        : isWithdrawalPending(3000)
+                          ? 'Request pending approval'
+                          : childrenSummary?.totalChildren >= 2 
+                            ? 'Available after 2+ referrals (unlimited)' 
+                            : `Requires ${2 - (childrenSummary?.totalChildren || 0)} more referrals`
                       }
                     </div>
                   </div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  childrenSummary?.totalChildren >= 2
+                  isWithdrawalClaimed(3000)
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    : isWithdrawalPending(3000)
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : childrenSummary?.totalChildren >= 2
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                 }`}>
-                  {childrenSummary?.totalChildren >= 2 ? 'Available' : 'Locked'}
+                  {isWithdrawalClaimed(3000) ? 'Claimed' : isWithdrawalPending(3000) ? 'Pending' : childrenSummary?.totalChildren >= 2 ? 'Available' : 'Locked'}
                 </span>
               </div>
             </div>
