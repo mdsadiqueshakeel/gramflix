@@ -40,8 +40,22 @@ public class UserService {
         if (user.getUserType().equals("NORMAL"))
             throw new RuntimeException("❌ User must be PREMIUM to withdraw");
 
-        if (!(amount == 100 || amount == 500 || amount == 1000))
-            throw new RuntimeException("❌ Withdraw amount must be 100, 500, or 1000");
+        if (!(amount == 100 || amount == 900 || amount == 3000))
+            throw new RuntimeException("❌ Withdraw amount must be 100, 900, or 3000");
+
+        // Lifetime Restriction Checks
+        if (amount == 100) {
+            if (user.isHasWithdrawn100()) {
+                throw new RuntimeException("❌ You already withdrew ₹100 once.");
+            }
+        } else if (amount == 900) {
+            if (user.isHasWithdrawn900()) {
+                throw new RuntimeException("❌ You already withdrew ₹900 once.");
+            }
+            if (!user.isReferredChildBoughtPremium()) {
+                throw new RuntimeException("❌ You can withdraw ₹900 only after a referred child buys premium.");
+            }
+        }
 
         if (wallet.getWalletBalance() < amount)
             throw new RuntimeException("⚠️ Insufficient wallet balance");
@@ -51,6 +65,14 @@ public class UserService {
         req.setAmount(amount);
         req.setStatus("PENDING");
         withdrawRequestRepository.save(req);
+
+        // Update user's withdrawal flags
+        if (amount == 100) {
+            user.setHasWithdrawn100(true);
+        } else if (amount == 900) {
+            user.setHasWithdrawn900(true);
+        }
+        userRepository.save(user);
 
         String withdrawApproveLink = "http://localhost:8080/api/admin/withdraw/approve/" + req.getId();
         String withdrawRejectLink = "http://localhost:8080/api/admin/withdraw/reject/" + req.getId();
@@ -85,7 +107,9 @@ public class UserService {
 
         // Credit parent bonus if referred by someone
         if (user.getReferredBy() != null && !user.getReferredBy().isEmpty()) {
-            referralService.creditPremiumUpgradeBonus(user.getReferredBy(), user.getId());
+            User parentUser = userRepository.findById(user.getReferredBy())
+                    .orElseThrow(() -> new RuntimeException("Parent user not found"));
+            referralService.creditPremiumUpgradeBonus(parentUser.getReferralId(), user.getId());
         }
 
         emailService.sendSimple(user.getEmail(), "Premium Upgrade Approved",
@@ -137,6 +161,11 @@ public class UserService {
     public WithdrawRequest getWithdrawRequestById(String requestId) {
         return withdrawRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Withdraw request not found"));
+    }
+
+    // ==================== GET USER BY ID ====================
+    public User getUserById(String userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     // ==================== UPDATE PROFILE ====================

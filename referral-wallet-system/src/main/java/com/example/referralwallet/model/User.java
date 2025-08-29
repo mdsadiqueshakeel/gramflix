@@ -1,13 +1,14 @@
 package com.example.referralwallet.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -28,6 +29,9 @@ public class User {
     private String walletId; // Reference to Wallet
     private double totalWithdrawal;
     private List<String> children = new ArrayList<>();
+    private boolean hasWithdrawn100 = false;
+    private boolean hasWithdrawn900 = false;
+    private boolean referredChildBoughtPremium = false;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     public String getId() {

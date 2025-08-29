@@ -106,7 +106,7 @@ public class UserController {
             return ResponseEntity.ok(new ApiResponse(true, "Withdraw request submitted successfully"));
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error submitting withdrawal request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Failed to submit withdraw request", null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Your 100 rupees limit is already withdrawn", null));
         }
     }
 
@@ -162,6 +162,10 @@ public class UserController {
     public ResponseEntity<ApiResponse> approvePremiumRequest(@PathVariable String userId) {
         try {
             logger.log(Level.INFO, "Approving premium request for userId: {0}", userId);
+            User user = userService.getUserById(userId);
+            if (!"PENDING".equals(user.getPremiumRequestStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(false, "Premium request already processed", null));
+            }
             userService.approvePremiumRequest(userId);
             logger.log(Level.INFO, "Premium request approved successfully for userId: {0}", userId);
             return ResponseEntity.ok(new ApiResponse(true, "Premium request approved successfully"));
@@ -175,6 +179,10 @@ public class UserController {
     public ResponseEntity<ApiResponse> rejectPremiumRequest(@PathVariable String userId) {
         try {
             logger.log(Level.INFO, "Rejecting premium request for userId: {0}", userId);
+            User user = userService.getUserById(userId);
+            if (!"PENDING".equals(user.getPremiumRequestStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(false, "Premium request already processed", null));
+            }
             userService.rejectPremiumRequest(userId);
             logger.log(Level.INFO, "Premium request rejected successfully for userId: {0}", userId);
             return ResponseEntity.ok(new ApiResponse(true, "Premium request rejected successfully"));
@@ -189,6 +197,9 @@ public class UserController {
         try {
             logger.log(Level.INFO, "Approving withdrawal request for requestId: {0}", requestId);
             WithdrawRequest withdrawRequest = userService.getWithdrawRequestById(requestId);
+            if (!"PENDING".equals(withdrawRequest.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(false, "Withdrawal request already processed", null));
+            }
             userService.approveWithdraw(withdrawRequest);
             logger.log(Level.INFO, "Withdraw request approved successfully for requestId: {0}", requestId);
             return ResponseEntity.ok(new ApiResponse(true, "Withdraw request approved successfully"));
@@ -203,6 +214,9 @@ public class UserController {
         try {
             logger.log(Level.INFO, "Rejecting withdrawal request for requestId: {0}", requestId);
             WithdrawRequest withdrawRequest = userService.getWithdrawRequestById(requestId);
+            if (!"PENDING".equals(withdrawRequest.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(false, "Withdrawal request already processed", null));
+            }
             userService.rejectWithdraw(withdrawRequest);
             logger.log(Level.INFO, "Withdraw request rejected successfully for requestId: {0}", requestId);
             return ResponseEntity.ok(new ApiResponse(true, "Withdraw request rejected successfully"));

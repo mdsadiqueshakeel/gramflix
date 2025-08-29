@@ -1,15 +1,16 @@
 package com.example.referralwallet.service;
 
-import com.example.referralwallet.model.User;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import com.example.referralwallet.model.Wallet;
 import com.example.referralwallet.model.WalletTransaction;
 import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +48,8 @@ public class ReferralService {
                 double points = 200;
                 String description = "Child user upgraded to PREMIUM";
                 updateWallet(wallet, points, WalletTransaction.TransactionType.PREMIUM_BONUS, description);
+                parent.setReferredChildBoughtPremium(true);
+                userRepository.save(parent);
             });
         });
     }
