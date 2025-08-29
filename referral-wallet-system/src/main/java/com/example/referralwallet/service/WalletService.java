@@ -40,8 +40,8 @@ public class WalletService {
     }
 
     public void withdraw(String userId, double amount) {
-        if (!(amount == 100 || amount == 500 || amount == 1000)) {
-            throw new RuntimeException("Invalid withdrawal amount. Use 100, 500, or 1000.");
+        if (!(amount == 100 || amount == 900 || amount == 3000)) {
+            throw new RuntimeException("Invalid withdrawal amount. Use 100, 900, or 3000.");
         }
 
         Wallet wallet = walletRepository.findByUserId(userId)

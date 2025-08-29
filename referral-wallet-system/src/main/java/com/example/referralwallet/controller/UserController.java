@@ -87,10 +87,9 @@ public class UserController {
         }
     }
 
-    @PostMapping("/withdraw")
-    public ResponseEntity<ApiResponse> requestWithdraw(@RequestBody Map<String, Double> body) {
+    @PostMapping("/withdraw/{amount}")
+    public ResponseEntity<ApiResponse> requestWithdraw(@PathVariable Double amount) {
         try {
-            Double amount = body.get("amount");
             if (amount == null || amount <= 0) {
                 logger.log(Level.WARNING, "Invalid amount provided for withdrawal: {0}", amount);
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Valid amount is required", null));
