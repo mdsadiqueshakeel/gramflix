@@ -3,7 +3,7 @@
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Star, Zap, Shield, Crown, Check } from "lucide-react";
-import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, getPremiumStatus, requestPremium, pollPremiumStatus } from "@/lib/api";
 import { useState, useEffect } from "react";
 
 const benefits = [
@@ -32,6 +32,7 @@ const benefits = [
 export default function PremiumContent({ onUpgradeClick }) {
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -109,6 +110,25 @@ export default function PremiumContent({ onUpgradeClick }) {
     );
   }
 
+  const handleUpgradeNow = async () => {
+    try {
+      setIsSubmitting(true);
+      await requestPremium();
+      
+      // Poll for status updates
+      const updatedProfile = await pollPremiumStatus(3, 2000); // Poll for 6 seconds
+      
+      if (typeof onUpgradeClick === 'function') {
+        onUpgradeClick(updatedProfile);
+      }
+    } catch (e) {
+      console.error("Failed to request premium:", e);
+      alert(`Upgrade failed: ${e.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Card className="p-6 shadow-moderate border-border bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10">
       {/* Header */}
@@ -161,10 +181,11 @@ export default function PremiumContent({ onUpgradeClick }) {
           </p>
           
           <Button
-            onClick={onUpgradeClick}
+            onClick={handleUpgradeNow}
+            disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-moderate hover:shadow-strong"
           >
-            Upgrade Now - ₹449
+            {isSubmitting ? "Processing..." : "Upgrade Now - ₹449"}
           </Button>
         </div>
       </div>

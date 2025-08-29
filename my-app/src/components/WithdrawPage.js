@@ -2,26 +2,18 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Textarea } from './ui/textarea'
 import { Card } from './ui/card'
-import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Crown, Users, Lock } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus } from "@/lib/api";
-
-// interface WithdrawPageProps {
-//   onNavigate: (page: string) => void
-// }
+import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, requestWithdraw } from "@/lib/api";
 
 function WithdrawPage({ onNavigate }) {
   const router = useRouter();
-  const [withdrawalAmount, setWithdrawalAmount] = useState('')
-  const [withdrawalRequest, setWithdrawalRequest] = useState('')
-  const [errors, setErrors] = useState ({})
   const [userProfile, setUserProfile] = useState(null);
   const [walletSummary, setWalletSummary] = useState(null);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState(null);
 
   const walletBalance = walletSummary?.walletBalance ?? 0
   const earnings = {
@@ -50,8 +42,6 @@ function WithdrawPage({ onNavigate }) {
       try {
         setIsLoadingWallet(true);
         const summary = await fetchWalletSummary();
-        // API shape: { data: { walletBalance, todaysEarning, thisWeekEarning, totalEarning } }
-        // fetchWalletSummary already unwraps to json.data
         setWalletSummary(summary);
       } catch (error) {
         console.error("Error loading wallet summary:", error);
@@ -62,33 +52,93 @@ function WithdrawPage({ onNavigate }) {
     loadWallet();
   }, []);
 
-  const handleWithdrawal = (e) => {
-    e.preventDefault()
-    const newErrors = {}
-    
-    const amount = parseInt(withdrawalAmount)
-    if (!withdrawalAmount) {
-      newErrors.amount = 'Withdrawal amount is required'
-    } else if (amount % 100 !== 0) {
-      newErrors.amount = 'Amount must be a multiple of 100'
-    } else if (amount > walletBalance) {
-      newErrors.amount = 'Insufficient balance'
-    } else if (amount < 100) {
-      newErrors.amount = 'Minimum withdrawal amount is ₹100'
+  // Check withdrawal eligibility based on backend logic
+  const getWithdrawalEligibility = () => {
+    if (!userProfile || getPremiumStatus(userProfile) !== "PREMIUM") {
+      return {
+        canWithdraw100: false,
+        canWithdraw900: false,
+        canWithdraw3000: false,
+        reason: "Premium membership required"
+      };
     }
+
+    const hasWithdrawn100 = userProfile.hasWithdrawn100 || false;
+    const hasWithdrawn900 = userProfile.hasWithdrawn900 || false;
+    const referredChildBoughtPremium = userProfile.referredChildBoughtPremium || false;
+    const totalChildren = userProfile.totalChildren || 0;
+
+    return {
+      canWithdraw100: !hasWithdrawn100 && walletBalance >= 100,
+      canWithdraw900: !hasWithdrawn900 && referredChildBoughtPremium && walletBalance >= 900,
+      canWithdraw3000: totalChildren >= 2 && walletBalance >= 3000,
+      reason: null
+    };
+  };
+
+  const eligibility = getWithdrawalEligibility();
+
+  const handleWithdraw = async (amount) => {
+    if (isSubmitting) return;
     
-    if (!withdrawalRequest.trim()) {
-      newErrors.request = 'Withdrawal request details are required'
+    setWithdrawAmount(amount);
+    setIsSubmitting(true);
+    
+    try {
+      await requestWithdraw(amount);
+      
+      // Refresh profile to get updated withdrawal flags
+      const refreshedProfile = await fetchUserProfile();
+      setUserProfile(refreshedProfile);
+      
+      // Refresh wallet to get updated balance
+      const refreshedWallet = await fetchWalletSummary();
+      setWalletSummary(refreshedWallet);
+      
+      alert(`Withdrawal request of ₹${amount} submitted successfully!`);
+    } catch (error) {
+      alert(`Withdrawal failed: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+      setWithdrawAmount(null);
     }
-    
-    setErrors(newErrors)
-    
-    if (Object.keys(newErrors).length === 0) {
-      alert('Withdrawal request submitted successfully!')
-      setWithdrawalAmount('')
-      setWithdrawalRequest('')
+  };
+
+  const withdrawalOptions = [
+    {
+      amount: 100,
+      label: "₹100",
+      description: "First withdrawal (one-time only)",
+      icon: CheckCircle,
+      color: "text-green-600",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      border: "border-green-200 dark:border-green-800",
+      canWithdraw: eligibility.canWithdraw100,
+      requirement: "Premium membership required"
+    },
+    {
+      amount: 900,
+      label: "₹900",
+      description: "After 1st referral gets premium (one-time only)",
+      icon: Crown,
+      color: "text-yellow-600",
+      bg: "bg-yellow-50 dark:bg-yellow-900/20",
+      border: "border-yellow-200 dark:border-yellow-800",
+      canWithdraw: eligibility.canWithdraw900,
+      requirement: "1st referral must be premium"
+    },
+    {
+      amount: 3000,
+      label: "₹3000",
+      description: "After 2nd referral gets premium (unlimited)",
+      icon: Users,
+      color: "text-blue-600",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      border: "border-blue-200 dark:border-blue-800",
+      canWithdraw: eligibility.canWithdraw3000,
+      requirement: "2+ premium referrals required"
     }
-  }
+  ];
 
   const earningsData = [
     { label: 'Today Earning', value: earnings.today, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
@@ -122,67 +172,89 @@ function WithdrawPage({ onNavigate }) {
           </div>
         </Card>
 
-        {/* Withdrawal Form */}
+        {/* Premium Status Warning */}
+        {getPremiumStatus(userProfile) !== "PREMIUM" && (
+          <Card className="p-4 border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700 shadow-moderate">
+            <div className="flex items-center space-x-3">
+              <Lock className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="font-medium text-orange-800 dark:text-orange-200">Premium Membership Required</p>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  You need to upgrade to premium to access withdrawal features.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Withdrawal Options */}
         <Card className="p-6 border-border shadow-moderate">
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-1">Request Withdrawal</h2>
-              <p className="text-sm text-muted-foreground">Submit a withdrawal request for your earnings</p>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Withdrawal Options</h2>
+              <p className="text-sm text-muted-foreground">Choose your withdrawal amount based on eligibility</p>
             </div>
             
-            <form onSubmit={handleWithdrawal} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="amount" className="text-sm font-medium text-foreground">Withdrawal Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount (minimum ₹100)"
-                  step="100"
-                  value={withdrawalAmount}
-                  onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  className={`h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${errors.amount ? 'border-destructive' : ''}`}
-                />
-                {errors.amount && (
-                  <div className="flex items-center space-x-2 text-destructive text-sm">
-                    <AlertCircle size={14} />
-                    <span>{errors.amount}</span>
+            <div className="space-y-4">
+              {withdrawalOptions.map((option, index) => {
+                const Icon = option.icon;
+                const isDisabled = !option.canWithdraw || isSubmitting;
+                const isProcessing = isSubmitting && withdrawAmount === option.amount;
+                
+                return (
+                  <div key={index} className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                    option.canWithdraw 
+                      ? `${option.border} ${option.bg} hover:border-opacity-60` 
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg ${option.bg}`}>
+                          <Icon className={`h-5 w-5 ${option.color}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xl font-bold text-foreground">{option.label}</span>
+                            {option.canWithdraw && (
+                              <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
+                                Available
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{option.description}</p>
+                          {!option.canWithdraw && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              {option.requirement}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleWithdraw(option.amount)}
+                        disabled={isDisabled}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                          isProcessing
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : option.canWithdraw
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        }`}
+                      >
+                        {isProcessing ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Processing...</span>
+                          </div>
+                        ) : (
+                          option.canWithdraw ? 'Withdraw' : 'Locked'
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                )}
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                  <CheckCircle size={14} />
-                  <span>Amount must be a multiple of ₹100</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="request" className="text-sm font-medium text-foreground">Request Details</Label>
-                <Textarea
-                  id="request"
-                  placeholder="Enter withdrawal request details (bank account, UPI ID, etc.)"
-                  value={withdrawalRequest}
-                  onChange={(e) => setWithdrawalRequest(e.target.value)}
-                  className={`min-h-24 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${errors.request ? 'border-destructive' : ''}`}
-                  rows={4}
-                />
-                {errors.request && (
-                  <div className="flex items-center space-x-2 text-destructive text-sm">
-                    <AlertCircle size={14} />
-                    <span>{errors.request}</span>
-                  </div>
-                )}
-              </div>
-
-              <Button 
-                type="submit" 
-                className={`w-full h-12 text-white font-medium rounded-xl shadow-moderate transition-all duration-200 ${
-                  getPremiumStatus(userProfile) === "PREMIUM"
-                    ? "bg-yellow-600 hover:bg-yellow-700"
-                    : "bg-newzia-primary hover:bg-newzia-primary-hover"
-                }`}
-              >
-                Submit Withdrawal Request
-              </Button>
-            </form>
+                );
+              })}
+            </div>
           </div>
         </Card>
 
@@ -237,12 +309,13 @@ function WithdrawPage({ onNavigate }) {
               }`}></div>
             </div>
             <div className="space-y-2">
-              <p className="font-medium text-foreground">Withdrawal Information</p>
+              <p className="font-medium text-foreground">Withdrawal Rules</p>
               <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• ₹100: One-time only, requires premium membership</li>
+                <li>• ₹900: One-time only, after 1st referral gets premium</li>
+                <li>• ₹3000: Unlimited, after 2nd referral gets premium</li>
                 <li>• Processing time: 1-24 business hours</li>
-                <li>• Minimum withdrawal: ₹100</li>
-                <li>• TDS Charges: 5% of withdrawal amount</li>
-                <li>• Admin Charges: 5% of withdrawal amount</li>
+                <li>• TDS & Admin charges: 10% total</li>
               </ul>
             </div>
           </div>

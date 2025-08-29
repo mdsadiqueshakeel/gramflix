@@ -10,10 +10,10 @@ function SidebarNav() {
   const [userProfile, setUserProfile] = useState(null);
 
   const navItems = [
-    { label: "Profile", icon: User, path: "/profile" },
     { label: "Home", icon: Home, path: "/" },
     { label: "Withdraw", icon: DollarSign, path: "/withdraw" },
     { label: "Refer", icon: Gift, path: "/refer-earn" },
+    { label: "Profile", icon: User, path: "/profile" },
   ];
 
   // Fetch user profile
