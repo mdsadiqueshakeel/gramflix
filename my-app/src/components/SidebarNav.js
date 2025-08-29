@@ -1,17 +1,33 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, Search, Gift, User } from "lucide-react";
+import { Home, DollarSign, Gift, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { fetchUserProfile, getPremiumStatus } from "@/lib/api";
 
 function SidebarNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const [userProfile, setUserProfile] = useState(null);
 
   const navItems = [
-    { label: "Home", icon: Home, path: "/" },
-    { label: "Discover", icon: Search, path: "#" },
-    { label: "Refer", icon: Gift, path: "/refer-earn" },
     { label: "Profile", icon: User, path: "/profile" },
+    { label: "Home", icon: Home, path: "/" },
+    { label: "Withdraw", icon: DollarSign, path: "/withdraw" },
+    { label: "Refer", icon: Gift, path: "/refer-earn" },
   ];
+
+  // Fetch user profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   return (
     <>
@@ -24,7 +40,9 @@ function SidebarNav() {
               onClick={() => router.push(item.path)}
               className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors font-medium ${
                 pathname === item.path
-                  ? "text-newzia-primary bg-accent"
+                  ? getPremiumStatus(userProfile) === "PREMIUM" 
+                    ? "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20" 
+                    : "text-newzia-primary bg-accent"
                   : "text-muted-foreground hover:text-newzia-primary hover:bg-accent"
               }`}
             >
@@ -44,7 +62,9 @@ function SidebarNav() {
               onClick={() => router.push(item.path)}
               className={`flex flex-col items-center space-y-1 p-2 transition-colors ${
                 pathname === item.path
-                  ? "text-newzia-primary"
+                  ? getPremiumStatus(userProfile) === "PREMIUM" 
+                    ? "text-yellow-600" 
+                    : "text-newzia-primary"
                   : "text-muted-foreground hover:text-newzia-primary"
               }`}
             >

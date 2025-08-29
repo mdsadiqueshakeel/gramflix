@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
-import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2 } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
 import { fetchChildrenSummary } from "@/lib/api";
 // interface ReferEarnPageProps {
 //   onNavigate: (page: string) => void
@@ -22,6 +22,61 @@ function ReferEarnPage({ onNavigate }) {
     navigator.clipboard.writeText(referralLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShareLink = async () => {
+    const shareTitle = 'Join GramFlix with my referral link!';
+    const shareText = `Hey! I'm using GramFlix and thought you might like it too. Join using my referral link and earn rewards! 🎉\n\n${referralLink}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: referralLink,
+        })
+      } catch (error) {
+        console.log('Error sharing:', error)
+        // Fallback to copy if sharing fails
+        const fallbackMessage = `${shareText}\n\nShare this link with your friends!`;
+        navigator.clipboard.writeText(fallbackMessage);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      const shareMessage = `${shareText}\n\nShare this link with your friends!`;
+      navigator.clipboard.writeText(shareMessage);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  }
+
+  const handleSocialShare = (platform) => {
+    const shareText = `Hey! I'm using GramFlix and thought you might like it too. Join using my referral link and earn rewards! 🎉`;
+    const encodedText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(referralLink);
+    
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+        break;
+      case 'telegram':
+        shareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+        break;
+      default:
+        return;
+    }
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
   }
 
   // Fetch user profile
@@ -55,50 +110,44 @@ function ReferEarnPage({ onNavigate }) {
 
   const beforePremiumPoints = [
     { refers: '1 Referral', points: '5 Points', description: 'Basic reward' },
-    { refers: '10 Referrals', points: '50 Points', description: 'Milestone bonus' },
     { refers: '25 Referrals', points: '125 Points', description: 'Achievement unlock' },
-    { refers: '50 Referrals', points: '250 Points', description: 'Expert level' },
     { refers: '100 Referrals', points: '500 Points', description: 'Master achievement' },
   ]
 
   const premiumPoints = [
-    { refers: '1 Referral', points: '10 Points', description: 'Premium boost' },
-    { refers: '10 Referrals', points: '100 Points', description: 'Double rewards' },
-    { refers: '25 Referrals', points: '250 Points', description: 'Premium milestone' },
-    { refers: '50 Referrals', points: '500 Points', description: 'Elite status' },
-    { refers: '100 Referrals', points: '1000 Points', description: 'Champion level' },
+    { refers: '1 Referral', points: '20 Points', description: 'Premium boost' },
+    { refers: '25 Referrals', points: '500 Points', description: 'Premium milestone' },
+    { refers: '100 Referrals', points: '2000 Points', description: 'Champion level' },
   ]
 
   return (
     <div className="min-h-screen bg-background pb-[1rem]">
-      {/* Header */}
-      {/* <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border px-4 py-4 shadow-subtle">
-        <div className="flex items-center space-x-4 max-w-2xl mx-auto">
-          <button 
-            onClick={() => router.push('/profile')}
-            className="p-2 -ml-2 text-muted-foreground hover:text-newzia-primary transition-colors rounded-lg hover:bg-accent"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Refer & Earn</h1>
-            <p className="text-sm text-muted-foreground">Share Newzia and earn rewards</p>
-          </div>
-        </div>
-      </header> */}
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Hero Card */}
-        <Card className="p-6 bg-gradient-to-br from-newzia-primary to-newzia-primary-hover text-white border-0 shadow-strong">
+        <Card className={`p-6 text-white border-0 shadow-strong ${
+          getPremiumStatus(userProfile) === "PREMIUM"
+            ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
+            : "bg-gradient-to-br from-newzia-primary to-newzia-primary-hover"
+        }`}>
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <Gift className="h-6 w-6" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Gift className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Invite Friends</h2>
+                  <p className="text-white/80">Earn points for every successful referral</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold">Invite Friends</h2>
-                <p className="text-white/80">Earn points for every successful referral</p>
-              </div>
+              <Button 
+                onClick={handleShareLink}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+              >
+                <img src="/images/share.avif" alt="Share" className="w-4 h-4 mr-2" />
+                Share
+              </Button>
             </div>
           </div>
         </Card>
@@ -107,7 +156,11 @@ function ReferEarnPage({ onNavigate }) {
         <Card className="p-6 border-border shadow-moderate">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground flex items-center space-x-2">
-              <Share className="h-5 w-5 text-newzia-primary" />
+              <Share className={`h-5 w-5 ${
+                getPremiumStatus(userProfile) === "PREMIUM" 
+                  ? "text-yellow-600" 
+                  : "text-newzia-primary"
+              }`} />
               <span>Your Referral Link</span>
             </h3>
             
@@ -120,7 +173,9 @@ function ReferEarnPage({ onNavigate }) {
                 className={`px-6 py-4 rounded-xl font-medium transition-all duration-200 ${
                   copied 
                     ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-newzia-primary hover:bg-newzia-primary-hover text-white'
+                    : getPremiumStatus(userProfile) === "PREMIUM"
+                      ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                      : 'bg-newzia-primary hover:bg-newzia-primary-hover text-white'
                 }`}
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -128,11 +183,50 @@ function ReferEarnPage({ onNavigate }) {
               </Button>
             </div>
             
-            <div className="flex space-x-2">
-              <Button variant="outline" className="flex-1 rounded-xl">
-                <ExternalLink size={16} className="mr-2" />
+            <div className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full rounded-xl"
+                onClick={handleShareLink}
+              >
+                <img src="/images/share.avif" alt="Share" className="w-4 h-4 mr-2" />
                 Share Link
               </Button>
+              
+              <div className="grid grid-cols-4 gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => handleSocialShare('whatsapp')}
+                >
+                  <span className="text-green-600 text-sm font-bold">WA</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => handleSocialShare('telegram')}
+                >
+                  <span className="text-blue-600 text-sm font-bold">TG</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => handleSocialShare('twitter')}
+                >
+                  <span className="text-blue-400 text-sm font-bold">X</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => handleSocialShare('facebook')}
+                >
+                  <span className="text-blue-700 text-sm font-bold">FB</span>
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
@@ -141,7 +235,11 @@ function ReferEarnPage({ onNavigate }) {
         <div className="grid grid-cols-2 gap-4">
           <Card className="p-6 text-center border-border hover:border-newzia-primary/30 transition-all duration-200 shadow-moderate">
             <div className="space-y-2">
-              <Users className="h-8 w-8 text-newzia-primary mx-auto" />
+              <Users className={`h-8 w-8 mx-auto ${
+                getPremiumStatus(userProfile) === "PREMIUM" 
+                  ? "text-yellow-600" 
+                  : "text-newzia-primary"
+              }`} />
               <div className="text-2xl font-bold text-foreground">{childrenSummary?.totalChildren ?? 0}</div>
               <div className="text-sm font-medium text-foreground">Total Referrals</div>
               <div className="text-xs text-muted-foreground">All time</div>
@@ -150,7 +248,11 @@ function ReferEarnPage({ onNavigate }) {
           
           <Card className="p-6 text-center border-border hover:border-newzia-primary/30 transition-all duration-200 shadow-moderate">
             <div className="space-y-2">
-              <Crown className="h-8 w-8 text-newzia-primary mx-auto" />
+              <Crown className={`h-8 w-8 mx-auto ${
+                getPremiumStatus(userProfile) === "PREMIUM" 
+                  ? "text-yellow-600" 
+                  : "text-newzia-primary"
+              }`} />
               <div className="text-2xl font-bold text-foreground">{childrenSummary?.premiumUsers ?? 0}</div>
               <div className="text-sm font-medium text-foreground">Premium Referrals</div>
               <div className="text-xs text-muted-foreground">Extra rewards</div>
@@ -173,10 +275,20 @@ function ReferEarnPage({ onNavigate }) {
                     <div className="text-xs text-muted-foreground">{child.email || '—'} · {child.mobile || '—'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs font-semibold {child.userType === 'PREMIUM' ? 'text-newzia-primary' : 'text-muted-foreground'}">
+                    <div className={`text-xs font-semibold ${
+                      child.userType === 'PREMIUM' 
+                        ? getPremiumStatus(userProfile) === "PREMIUM" 
+                          ? 'text-yellow-600' 
+                          : 'text-newzia-primary'
+                        : 'text-muted-foreground'
+                    }`}>
                       {child.userType || 'NORMAL'}
                     </div>
-                    <a href={child.referralLink} target="_blank" rel="noreferrer" className="text-xs text-newzia-primary hover:underline">
+                    <a href={child.referralLink} target="_blank" rel="noreferrer" className={`text-xs hover:underline ${
+                      getPremiumStatus(userProfile) === "PREMIUM" 
+                        ? "text-yellow-600" 
+                        : "text-newzia-primary"
+                    }`}>
                       Invite link
                     </a>
                   </div>
@@ -201,7 +313,11 @@ function ReferEarnPage({ onNavigate }) {
                     <div className="text-sm text-muted-foreground">{item.description}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-newzia-primary">{item.points}</div>
+                    <div className={`font-bold ${
+                      getPremiumStatus(userProfile) === "PREMIUM" 
+                        ? "text-yellow-600" 
+                        : "text-newzia-primary"
+                    }`}>{item.points}</div>
                   </div>
                 </div>
               </div>
@@ -210,10 +326,18 @@ function ReferEarnPage({ onNavigate }) {
         </Card>
 
         {/* For Premium Members Section */}
-        <Card className="border-newzia-primary/30 shadow-moderate bg-gradient-to-br from-newzia-blue-50 to-white dark:from-newzia-gray-800 dark:to-card">
+        <Card className={`border-newzia-primary/30 shadow-moderate ${
+          getPremiumStatus(userProfile) === "PREMIUM"
+            ? "bg-gradient-to-br from-yellow-50 to-white dark:from-yellow-900/20 dark:to-card border-yellow-400/30"
+            : "bg-gradient-to-br from-newzia-blue-50 to-white dark:from-newzia-gray-800 dark:to-card"
+        }`}>
           <div className="p-6 border-b border-border">
             <div className="flex items-center space-x-2">
-              <Crown className="h-5 w-5 text-newzia-primary" />
+              <Crown className={`h-5 w-5 ${
+                getPremiumStatus(userProfile) === "PREMIUM" 
+                  ? "text-yellow-600" 
+                  : "text-newzia-primary"
+              }`} />
               <h3 className="text-lg font-semibold text-foreground">Premium Member Rewards</h3>
             </div>
             <p className="text-sm text-muted-foreground">Enhanced rewards for premium subscribers</p>
@@ -227,7 +351,11 @@ function ReferEarnPage({ onNavigate }) {
                     <div className="text-sm text-muted-foreground">{item.description}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-newzia-primary text-lg">{item.points}</div>
+                    <div className={`font-bold text-lg ${
+                      getPremiumStatus(userProfile) === "PREMIUM" 
+                        ? "text-yellow-600" 
+                        : "text-newzia-primary"
+                    }`}>{item.points}</div>
                   </div>
                 </div>
               </div>
@@ -236,10 +364,22 @@ function ReferEarnPage({ onNavigate }) {
         </Card>
 
         {/* Note */}
-        <Card className="p-4 bg-newzia-primary/10 border-newzia-primary/30 shadow-moderate">
+        <Card className={`p-4 border-newzia-primary/30 shadow-moderate ${
+          getPremiumStatus(userProfile) === "PREMIUM"
+            ? "bg-yellow-100 dark:bg-yellow-900/20 border-yellow-400/30"
+            : "bg-newzia-primary/10"
+        }`}>
           <div className="flex items-start space-x-3">
-            <div className="p-1 bg-newzia-primary/20 rounded-full mt-0.5">
-              <div className="w-2 h-2 bg-newzia-primary rounded-full"></div>
+            <div className={`p-1 rounded-full mt-0.5 ${
+              getPremiumStatus(userProfile) === "PREMIUM"
+                ? "bg-yellow-400/20"
+                : "bg-newzia-primary/20"
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                getPremiumStatus(userProfile) === "PREMIUM"
+                  ? "bg-yellow-600"
+                  : "bg-newzia-primary"
+              }`}></div>
             </div>
             <div className="space-y-1">
               <p className="font-medium text-foreground">Premium Referral Bonus</p>

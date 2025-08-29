@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { DarkModeToggle } from "./DarkModeToggle";
 import { Bell } from "lucide-react";
+import { getPremiumStatus } from "@/lib/api";
 
 function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
   const router = useRouter();
@@ -59,7 +60,7 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
       }
       setProfileLoading(true);
       try {
-        const res = await fetch("http://localhost:8080/api/auth/profile", {
+        const res = await fetch(`http://localhost:8080/api/auth/profile`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
@@ -99,7 +100,11 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-newzia-primary to-newzia-primary-hover flex items-center justify-center">
             <span className="text-white font-bold text-sm">G</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">GramFlix</h1>
+          <h1 className={`text-2xl font-bold ${
+            getPremiumStatus(profile) === "PREMIUM" 
+              ? "text-yellow-600" 
+              : "text-foreground"
+          }`}>GramFlix</h1>
         </div>
 
         {/* Right side */}
@@ -119,11 +124,19 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
           {(isAuthed || isLoggedIn) ? (
             <div className="relative">
               <Avatar
-                className="h-9 w-9 cursor-pointer ring-2 ring-newzia-primary/20 hover:ring-newzia-primary/40 transition-all duration-200"
+                className={`h-9 w-9 cursor-pointer ring-2 hover:ring-newzia-primary/40 transition-all duration-200 ${
+                  getPremiumStatus(profile) === "PREMIUM" 
+                    ? "ring-yellow-400 ring-4" 
+                    : "ring-newzia-primary/20"
+                }`}
                 onClick={() => setMenuOpen((v) => !v)}
               >
-                 <AvatarImage src="/images/avatar_image.avif" alt= "User" />
-                <AvatarFallback className="bg-newzia-primary text-white text-sm font-medium">
+                              <AvatarImage src={getPremiumStatus(profile) === "PREMIUM" ? "/images/premium_avatar_image.avif" : "/images/avatar_image.avif"} alt= "User" />
+                <AvatarFallback className={`text-sm font-medium ${
+                  getPremiumStatus(profile) === "PREMIUM"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white"
+                    : "bg-newzia-primary text-white"
+                }`}>
                            {(profile && profile.name ? profile?.name.charAt(0) : "U")}
 
                 </AvatarFallback>
@@ -131,9 +144,17 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-popover shadow-moderate p-3 z-50">
                   <div className="flex items-start space-x-3 px-1 pb-2">
-                    <Avatar className="h-9 w-9">
-                    <AvatarImage src="/images/avatar_image.avif" alt= "User" />
-                      <AvatarFallback className="bg-newzia-primary text-white text-sm font-medium">
+                    <Avatar className={`h-9 w-9 ${
+                      getPremiumStatus(profile) === "PREMIUM" 
+                        ? "ring-2 ring-yellow-400" 
+                        : ""
+                    }`}>
+                    <AvatarImage src={getPremiumStatus(profile) === "PREMIUM" ? "/images/premium_avatar_image.avif" : "/images/avatar_image.avif"} alt= "User" />
+                      <AvatarFallback className={`text-sm font-medium ${
+                        getPremiumStatus(profile) === "PREMIUM"
+                          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white"
+                          : "bg-newzia-primary text-white"
+                      }`}>
                         {(profile && profile.name ? profile?.name.charAt(0) : "U")}
                       </AvatarFallback>
                     </Avatar>

@@ -29,12 +29,15 @@ function SignUpPage({ onNavigate }) {
   const [showOTP, setShowOTP] = useState(false)
   const [otp, setOtp] = useState('')
   const [errors, setErrors] = useState({})
+  const [initLoading, setInitLoading] = useState(false)
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [serverError, setServerError] = useState('')
 
   // Prefill referral code from URL param `referralId`
   React.useEffect(() => {
-    const referralId = searchParams?.get('referralId');
-    if (referralId) {
-      setFormData(prev => ({ ...prev, referCode: referralId }));
+    const referral = searchParams?.get('referralId');
+    if (referral) {
+      setFormData(prev => ({ ...prev, referCode: referral }));
       if (errors.referCode) {
         setErrors(prev => ({ ...prev, referCode: '' }));
       }
@@ -64,17 +67,78 @@ function SignUpPage({ onNavigate }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault()
-    if (validateForm()) {
+    setServerError('')
+    if (!validateForm()) return
+    try {
+      setInitLoading(true)
+      const body = {
+        name: formData.name,
+        email: formData.email,
+        mobile: Number(formData.mobile),
+        password: formData.password,
+        referral: formData.referCode,
+      }
+      const res = await fetch(`http://localhost:8080/api/auth/init-register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const json = await res.json().catch(() => null)
+      console.log('init-register response:', json)
+      if (!res.ok) {
+        const errMsg = (json && (json.message || json.error)) || 'Failed to start registration'
+        throw new Error(errMsg)
+      }
       setShowOTP(true)
+    } catch (err) {
+      setServerError(err.message || 'Something went wrong')
+    } finally {
+      setInitLoading(false)
     }
   }
 
-  const handleOTPVerification = (e) => {
+  const handleOTPVerification = async (e) => {
     e.preventDefault()
-    if (otp.length === 6) {
-      onNavigate('home')
+    setServerError('')
+    if (otp.length !== 6) return
+    try {
+      setOtpLoading(true)
+      // Step 2: verify OTP
+      const verifyRes = await fetch(`http://localhost:8080/api/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: Number(formData.mobile), code: otp }),
+      })
+      if (!verifyRes.ok) {
+        const err = await verifyRes.json().catch(() => ({}))
+        throw new Error(err.message || 'Invalid or expired OTP')
+      }
+
+      // Step 3: complete registration
+      const completeBody = {
+        name: formData.name,
+        email: formData.email,
+        mobile: Number(formData.mobile),
+        password: formData.password,
+        referral: formData.referCode,
+      }
+      const completeRes = await fetch(`http://localhost:8080/api/auth/complete-register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(completeBody),
+      })
+      if (!completeRes.ok) {
+        const err = await completeRes.json().catch(() => ({}))
+        throw new Error(err.message || 'Failed to complete registration')
+      }
+
+      if (onNavigate) onNavigate('/login'); else router.push('/login')
+    } catch (err) {
+      setServerError(err.message || 'Something went wrong')
+    } finally {
+      setOtpLoading(false)
     }
   }
 
@@ -95,6 +159,7 @@ function SignUpPage({ onNavigate }) {
             </div>
 
             <form onSubmit={handleOTPVerification} className="space-y-6">
+              {serverError && <p className="text-destructive text-sm text-center">{serverError}</p>}
               <div className="space-y-2">
                 <Label htmlFor="otp" className="text-sm font-medium text-foreground">Verification Code</Label>
                 <Input
@@ -111,15 +176,19 @@ function SignUpPage({ onNavigate }) {
               <Button 
                 type="submit" 
                 className="w-full h-12 bg-newzia-primary hover:bg-newzia-primary-hover text-white font-medium rounded-xl shadow-moderate transition-all duration-200"
-                disabled={otp.length !== 6}
+                disabled={otp.length !== 6 || otpLoading}
               >
-                Verify & Continue
+                {otpLoading ? 'Verifying...' : 'Verify & Continue'}
               </Button>
             </form>
 
             <p className="text-center text-sm text-muted-foreground">
               Didn't receive the code?{' '}
-              <button className="text-newzia-primary hover:text-newzia-primary-hover font-medium hover:underline transition-colors">
+              <button 
+                type="button"
+                onClick={() => handleSignUp(new Event('submit'))}
+                className="text-newzia-primary hover:text-newzia-primary-hover font-medium hover:underline transition-colors"
+              >
                 Resend Code
               </button>
             </p>
@@ -151,6 +220,7 @@ function SignUpPage({ onNavigate }) {
           </div>
 
           <form onSubmit={handleSignUp} className="space-y-5">
+            {serverError && <p className="text-destructive text-sm">{serverError}</p>}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-foreground">Full Name</Label>
               <Input
@@ -251,8 +321,9 @@ function SignUpPage({ onNavigate }) {
             <Button 
               type="submit" 
               className="w-full h-12 bg-newzia-primary hover:bg-newzia-primary-hover text-white font-medium rounded-xl shadow-moderate transition-all duration-200"
+              disabled={initLoading}
             >
-              Create Account
+              {initLoading ? 'Starting...' : 'Create Account'}
             </Button>
           </form>
 
