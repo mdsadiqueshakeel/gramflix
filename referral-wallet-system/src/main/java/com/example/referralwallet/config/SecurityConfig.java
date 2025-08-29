@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/",
                                 "/h2/", // H2 Console (if needed)
                                 "/error", // Permit error page
-                                "/api/password-reset/" // Allow password reset
+                                "/api/password-reset/**" // Allow password reset
                         ).permitAll()
                         .anyRequest().authenticated() // EVERYTHING else needs JWT
                 )

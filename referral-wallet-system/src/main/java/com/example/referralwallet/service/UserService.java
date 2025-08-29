@@ -109,8 +109,8 @@ public class UserService {
         passwordResetTokenRepository.save(resetToken);
 
         String resetLink = "http://localhost:3000/reset-password?token=" + token;
-        String emailBody = "To reset your password, click the link below:\n" +
-                "<a href=\"" + resetLink + "\">Reset Password</a>\n" +
+        String emailBody = "To reset your password, click the button below:<br/><br/>" +
+                "<a href=\"" + resetLink + "\" style=\"background-color: #4CAF50; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold;\">Reset Password</a><br/><br/>" +
                 "This link will expire in 5 minutes.";
         emailService.sendSimple(email, "Password Reset Request", emailBody);
         System.out.println("📧 [DEBUG] Password reset link sent to " + email);
