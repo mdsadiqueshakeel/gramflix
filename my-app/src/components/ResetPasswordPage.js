@@ -60,12 +60,12 @@ function ResetPasswordPage() {
     setError("");
 
     try {
-      const res = await fetch(`http://localhost:8080/api/auth/reset-password`, {
+      const res = await fetch(`http://localhost:8080/api/password-reset/reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          password: formData.password,
+          newPassword: formData.password,
         }),
       });
 

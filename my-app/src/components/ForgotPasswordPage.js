@@ -26,7 +26,7 @@ function ForgotPasswordPage() {
     setError("");
 
     try {
-      const res = await fetch(`http://localhost:8080/api/auth/forgot-password`, {
+      const res = await fetch(`http://localhost:8080/api/password-reset/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -68,9 +68,9 @@ function ForgotPasswordPage() {
               <p className="text-muted-foreground">
                 We've sent a password reset link to <span className="font-medium text-foreground">{email}</span>
               </p>
-              <p className="text-sm text-muted-foreground">
-                Click the link in the email to reset your password. The link will expire in 1 hour.
-              </p>
+                             <p className="text-sm text-muted-foreground">
+                 Check your email for a password reset link. Click the link to reset your password.
+               </p>
             </div>
 
             <div className="space-y-3 pt-4">
