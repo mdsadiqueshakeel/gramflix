@@ -17,7 +17,7 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/")
+        registry.addMapping("/api/**")
                 .allowedOrigins(
                         "http://localhost:3000",
                         "https://gramflix.com",
@@ -53,7 +53,7 @@ public class CorsConfig implements WebMvcConfigurer {
         configuration.addAllowedHeader("Access-Control-Request-Headers");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/", configuration);
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 }

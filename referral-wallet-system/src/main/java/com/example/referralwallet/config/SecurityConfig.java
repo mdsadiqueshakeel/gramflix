@@ -45,7 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/premium/approve/", "/api/admin/withdraw/approve/",
                                 "/api/admin/premium/reject/", "/api/admin/withdraw/reject/")
                         .permitAll() // Permit admin approval/rejection without authentication
-                        .requestMatchers(HttpMethod.OPTIONS, "/").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/login", // Allow login
                                 "/api/auth/init-register", // Allow registration
