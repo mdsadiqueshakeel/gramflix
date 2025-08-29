@@ -73,6 +73,10 @@ public class UserController {
     public ResponseEntity<ApiResponse> requestPremium(@RequestParam String mobile) {
         try {
             String userId = SecurityUtils.getCurrentUserId();
+            if (userId == null) {
+                logger.log(Level.WARNING, "Unauthorized premium request: Invalid or expired token. User ID not found.");
+                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
+            }
             logger.log(Level.INFO, "Premium request for userId: {0}, mobile: {1}", new Object[]{userId, mobile});
             userService.applyPremiumRequest(userId, mobile);
             logger.log(Level.INFO, "Premium request submitted successfully for userId: {0}", userId);
@@ -92,6 +96,10 @@ public class UserController {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Valid amount is required", null));
             }
             String userId = SecurityUtils.getCurrentUserId();
+            if (userId == null) {
+                logger.log(Level.WARNING, "Unauthorized withdraw request: Invalid or expired token. User ID not found.");
+                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
+            }
             logger.log(Level.INFO, "Withdrawal request for userId: {0}, amount: {1}", new Object[]{userId, amount});
             userService.requestWithdraw(userId, amount);
             logger.log(Level.INFO, "Withdraw request submitted successfully for userId: {0}", userId);

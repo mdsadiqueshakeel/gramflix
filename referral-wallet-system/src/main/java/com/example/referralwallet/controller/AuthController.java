@@ -52,6 +52,8 @@ public class AuthController {
                 response = new ApiResponse(false, "Mobile number must be 10 digits");
                 return ResponseEntity.badRequest().body(response);
             }
+
+            
     
             // 2️⃣ MANDATORY: Validate referral ID
             if (request.getReferral() == null || request.getReferral().isEmpty()) {

@@ -92,6 +92,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Boot Actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Spring Boot Webflux for WebClient -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -129,6 +135,10 @@
       <configuration>
         <argLine>--add-opens java.base/java.lang=ALL-UNNAMED -Dnet.bytebuddy.experimental=true</argLine>
       </configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
     </plugin>
   </plugins>
 </build>

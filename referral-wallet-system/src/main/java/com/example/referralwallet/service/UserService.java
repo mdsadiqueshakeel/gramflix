@@ -57,7 +57,7 @@ public class UserService {
         String withdrawEmailBody = "User " + user.getEmail() + " requested withdraw of " + amount + ".\n" +
                 "<a href=\"" + withdrawApproveLink + "\">Accept</a> | " +
                 "<a href=\"" + withdrawRejectLink + "\">Reject</a>";
-        emailService.sendSimple("admin@example.com", "Withdraw Request", withdrawEmailBody);
+        emailService.sendSimple("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
 
@@ -72,7 +72,7 @@ public class UserService {
         String premiumEmailBody = "User " + user.getEmail() + " with mobile " + mobileNumber + " requested premium.\n" +
                 "<a href=\"" + premiumApproveLink + "\">Accept</a> | " +
                 "<a href=\"" + premiumRejectLink + "\">Reject</a>";
-        emailService.sendSimple("admin@example.com", "Premium Upgrade Request", premiumEmailBody);
+        emailService.sendSimple("projecttesting897@gmail.com", "Premium Upgrade Request", premiumEmailBody);
         System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
     }
 

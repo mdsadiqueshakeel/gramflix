@@ -20,11 +20,11 @@
 //         if (userRepository.count() == 0) {
 //             User admin = new User();
 //             admin.setName("Root user");
-//             admin.setEmail("techmagicop@gmail.com");
-//             admin.setMobile("9155649575");
-//             admin.setPasswordHash(passwordEncoder.encode("root@123")); // Hash the password
+//             admin.setEmail("test@ac.in");
+//             admin.setMobile("1234567890");
+//             admin.setPassword(passwordEncoder.encode("test123")); // Hash the password
 //             admin.setReferralId("ROOT123");
-//             admin.setReferralLink("http://techmagicop@gmail.com/ref/ROOT123");
+//             admin.setReferralLink("http://localhost:3000/signup?refferalId=ROOT123");
 //             admin.setUserType("ADMIN");
 //             admin.setStatus("ACTIVE");
 //             userRepository.save(admin);
