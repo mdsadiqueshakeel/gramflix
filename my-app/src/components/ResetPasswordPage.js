@@ -24,10 +24,20 @@ function ResetPasswordPage() {
 
   useEffect(() => {
     const tokenParam = searchParams.get("token");
+    console.log("Token from URL:", tokenParam);
+    
     if (!tokenParam) {
       setError("Invalid reset link. Please request a new password reset.");
       return;
     }
+    
+    // Validate token format (should be a UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tokenParam)) {
+      setError("Invalid token format. Please request a new password reset.");
+      return;
+    }
+    
     setToken(tokenParam);
   }, [searchParams]);
 
@@ -60,23 +70,37 @@ function ResetPasswordPage() {
     setError("");
 
     try {
+      const requestBody = {
+        token,
+        newPassword: formData.password,
+      };
+      console.log("Sending request with body:", requestBody);
+      console.log("Backend URL:", "http://localhost:8080/api/password-reset/reset");
+      
       const res = await fetch(`http://localhost:8080/api/password-reset/reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          newPassword: formData.password,
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
 
       if (!res.ok) {
         const errorData = await res.json();
+        console.error("Error response:", errorData);
         throw new Error(errorData.message || "Failed to reset password");
       }
 
+      console.log("Password reset successful!");
       setSuccess(true);
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      console.error("Password reset error:", err);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError("Network error: Unable to connect to the server. Please check if the backend is running.");
+      } else {
+        setError(err.message || "Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
