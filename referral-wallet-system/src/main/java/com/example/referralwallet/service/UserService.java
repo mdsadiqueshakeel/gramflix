@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,9 +14,11 @@ import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.Wallet;
 import com.example.referralwallet.model.WalletTransaction;
 import com.example.referralwallet.model.WithdrawRequest;
+import com.example.referralwallet.model.PasswordResetToken;
 import com.example.referralwallet.repository.UserRepository;
 import com.example.referralwallet.repository.WalletRepository;
 import com.example.referralwallet.repository.WithdrawRequestRepository;
+import com.example.referralwallet.repository.PasswordResetTokenRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +32,7 @@ public class UserService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final ReferralService referralService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     // ==================== WITHDRAW REQUEST ====================
     public void requestWithdraw(String userId, double amount) {
@@ -81,6 +85,66 @@ public class UserService {
                 "<a href=\"" + withdrawRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold; margin-left: 15px;\">Reject</a>";
         emailService.sendSimple("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
+    }
+
+    // ==================== PASSWORD RESET ====================
+    public void requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // For security reasons, do not reveal if the user does not exist
+            System.out.println("⚠️ [DEBUG] Password reset requested for non-existent email: " + email);
+            return;
+        }
+
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(5);
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(token);
+        resetToken.setUserId(user.getId());
+        resetToken.setExpiryDate(expiryDate);
+        resetToken.setUsed(false);
+        passwordResetTokenRepository.save(resetToken);
+
+        String resetLink = "http://localhost:3000/reset-password?token=" + token;
+        String emailBody = "To reset your password, click the link below:\n" +
+                "<a href=\"" + resetLink + "\">Reset Password</a>\n" +
+                "This link will expire in 5 minutes.";
+        emailService.sendSimple(email, "Password Reset Request", emailBody);
+        System.out.println("📧 [DEBUG] Password reset link sent to " + email);
+    }
+
+    public boolean verifyPasswordResetToken(String token) {
+        Optional<PasswordResetToken> optionalToken = passwordResetTokenRepository.findByToken(token);
+        if (optionalToken.isEmpty()) {
+            return false;
+        }
+
+        PasswordResetToken resetToken = optionalToken.get();
+        if (resetToken.isUsed() || resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+        return true;
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        Optional<PasswordResetToken> optionalToken = passwordResetTokenRepository.findByToken(token);
+        if (optionalToken.isEmpty()) {
+            throw new RuntimeException("Invalid or expired token.");
+        }
+
+        PasswordResetToken resetToken = optionalToken.get();
+        if (resetToken.isUsed() || resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Invalid or expired token.");
+        }
+
+        User user = userRepository.findById(resetToken.getUserId()).orElseThrow(() -> new RuntimeException("User not found."));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+        System.out.println("🔑 [DEBUG] Password reset successfully for user: " + user.getEmail());
     }
 
     // ==================== PREMIUM REQUEST ====================

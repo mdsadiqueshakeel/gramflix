@@ -1,3 +1,4 @@
+
 package com.example.referralwallet.config;
 
 import java.util.List;
@@ -44,29 +45,32 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin/premium/approve/**", "/api/admin/withdraw/approve/**", "/api/admin/premium/reject/**", "/api/admin/withdraw/reject/**").permitAll() // Permit admin approval/rejection without authentication
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/admin/premium/approve/", "/api/admin/withdraw/approve/",
+                                "/api/admin/premium/reject/", "/api/admin/withdraw/reject/")
+                        .permitAll() // Permit admin approval/rejection without authentication
+                        .requestMatchers(HttpMethod.OPTIONS, "/").permitAll()
                         .requestMatchers(
                                 "/api/auth/login", // Allow login
                                 "/api/auth/init-register", // Allow registration
                                 "/api/otp/verify", // Allow OTP verification
                                 "/api/auth/complete-register",
-                                "/swagger-ui/**", // Swagger
-                                "/v3/api-docs/**",
-                                "/h2/**", // H2 Console (if needed)
+                                "/swagger-ui/", // Swagger
+                                "/v3/api-docs/",
+                                "/h2/", // H2 Console (if needed)
                                 "/error", // Permit error page
-                                "/api/users/withdraw", // Permit withdraw request
-                                "/api/users/premium-request" // Permit premium request
+                                "/api/password-reset/**" // Allow password reset
                         ).permitAll()
                         .anyRequest().authenticated() // EVERYTHING else needs JWT
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
-                            logger.warning("Unauthorized access attempt to " + request.getRequestURI() + ": " + authException.getMessage());
+                            logger.warning("Unauthorized access attempt to " + request.getRequestURI() + ": "
+                                    + authException.getMessage());
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             ObjectMapper mapper = new ObjectMapper();
-                            mapper.writeValue(response.getOutputStream(), new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
+                            mapper.writeValue(response.getOutputStream(),
+                                    new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
                         }))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -77,14 +81,23 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
+        // Ensure preflight requests are handled
+        configuration.addAllowedHeader("Authorization");
+        configuration.addAllowedHeader("Content-Type");
+        configuration.addAllowedHeader("Accept");
+        configuration.addAllowedHeader("Origin");
+        configuration.addAllowedHeader("Access-Control-Request-Method");
+        configuration.addAllowedHeader("Access-Control-Request-Headers");
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/", configuration);
         return source;
     }
 

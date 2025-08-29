@@ -43,7 +43,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/api/admin/premium/approve") ||
             path.startsWith("/api/admin/premium/reject") ||
             path.startsWith("/api/admin/withdraw/approve") ||
-            path.startsWith("/api/admin/withdraw/reject")) {
+            path.startsWith("/api/admin/withdraw/reject") ||
+            path.startsWith("/api/password-reset")) {
 
             System.out.println("✅ [DEBUG] Public endpoint, skipping JWT check for: " + path);
             filterChain.doFilter(request, response);
