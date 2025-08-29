@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.referralwallet.dto.UserDtos;
 import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.Wallet;
+import com.example.referralwallet.dto.WithdrawRequestResponse;
 import com.example.referralwallet.model.WalletTransaction;
 import com.example.referralwallet.model.WithdrawRequest;
 import com.example.referralwallet.model.PasswordResetToken;
@@ -193,6 +195,33 @@ public class UserService {
     }
 
     // ==================== APPROVE WITHDRAW (FOR ADMIN) ====================
+    public List<WithdrawRequestResponse> getUserWithdrawRequests(String userId) {
+        List<WithdrawRequest> allRequests = withdrawRequestRepository.findByUserId(userId);
+        List<WithdrawRequestResponse> filteredRequests = new ArrayList<>();
+
+        // Filter logic
+        for (WithdrawRequest req : allRequests) {
+            if (req.getAmount() == 100 || req.getAmount() == 900) {
+                filteredRequests.add(new WithdrawRequestResponse(
+                        req.getUserId(), req.getAmount(), req.getStatus(), req.getCreatedAt(), req.getUpdatedAt()));
+            }
+        }
+
+        // Handle 3000 amount: return only the latest
+        List<WithdrawRequest> amount3000Requests = withdrawRequestRepository.findByUserIdAndAmount(userId, 3000,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        if (!amount3000Requests.isEmpty()) {
+            filteredRequests.add(new WithdrawRequestResponse(
+                    amount3000Requests.get(0).getUserId(),
+                    amount3000Requests.get(0).getAmount(),
+                    amount3000Requests.get(0).getStatus(),
+                    amount3000Requests.get(0).getCreatedAt(),
+                    amount3000Requests.get(0).getUpdatedAt()));
+        }
+
+        return filteredRequests;
+    }
+
     public void approveWithdraw(WithdrawRequest req) {
         User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Wallet not found"));
@@ -235,8 +264,12 @@ public class UserService {
     // ==================== UPDATE PROFILE ====================
     public void updateProfile(String userId, UserDtos.ProfileUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        if (request.getName() != null && !request.getName().isEmpty()) {
+            user.setName(request.getName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+            user.setEmail(request.getEmail());
+        }
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }

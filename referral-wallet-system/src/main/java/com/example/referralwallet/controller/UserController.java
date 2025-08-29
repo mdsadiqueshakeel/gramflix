@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.referralwallet.dto.ApiResponse;
+import com.example.referralwallet.dto.WithdrawRequestResponse;
 import com.example.referralwallet.model.User;
 import com.example.referralwallet.model.WithdrawRequest;
 import com.example.referralwallet.repository.UserRepository;
@@ -84,6 +85,23 @@ public class UserController {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error submitting premium request", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Failed to submit premium request", null));
+        }
+    }
+
+    @GetMapping("/withdraw-requests")
+    public ResponseEntity<ApiResponse> getUserWithdrawRequests() {
+        try {
+            String userId = SecurityUtils.getCurrentUserId();
+            if (userId == null) {
+                logger.log(Level.WARNING, "Unauthorized request: User ID not found in security context.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
+            }
+            List<WithdrawRequestResponse> requests = userService.getUserWithdrawRequests(userId);
+            logger.log(Level.INFO, "Fetched withdrawal requests for userId: {0}", userId);
+            return ResponseEntity.ok(new ApiResponse(true, "Withdrawal requests fetched successfully", requests));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching withdrawal requests", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Failed to fetch withdrawal requests", null));
         }
     }
 
