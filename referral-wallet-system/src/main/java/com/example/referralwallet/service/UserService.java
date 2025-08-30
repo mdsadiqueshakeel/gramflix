@@ -5,9 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.Date;
 
 import org.springframework.data.domain.Sort;
+// import org.springframework.data.mongodb.core.aggregation.VariableOperators.Map;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -199,30 +202,25 @@ public class UserService {
 
     // ==================== APPROVE WITHDRAW (FOR ADMIN) ====================
     public List<WithdrawRequestResponse> getUserWithdrawRequests(String userId) {
-        // The `updatedAt` field was removed from `WithdrawRequest.java`, so `getUpdatedAt()` is no longer available.
+        // Get all requests sorted by createdAt in descending order
         List<WithdrawRequest> allRequests = withdrawRequestRepository.findByUserId(userId);
-        List<WithdrawRequestResponse> filteredRequests = new ArrayList<>();
-
-        // Filter logic
-        for (WithdrawRequest req : allRequests) {
-            if (req.getAmount() == 100 || req.getAmount() == 900) {
-                filteredRequests.add(new WithdrawRequestResponse(
-                    req.getUserId(), req.getAmount(), req.getStatus(), Date.from(req.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()))); // updatedAt removed
-            }
-        }
-
-        // Handle 3000 amount: return only the latest
-        List<WithdrawRequest> amount3000Requests = withdrawRequestRepository.findByUserIdAndAmount(userId, 3000,
-                Sort.by(Sort.Direction.DESC, "createdAt"));
-        if (!amount3000Requests.isEmpty()) {
-            filteredRequests.add(new WithdrawRequestResponse(
-                    amount3000Requests.get(0).getUserId(),
-                    amount3000Requests.get(0).getAmount(),
-                    amount3000Requests.get(0).getStatus(),
-                    Date.from(amount3000Requests.get(0).getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()))); // updatedAt removed
-        }
-
-        return filteredRequests;
+        allRequests.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
+        
+        // Group by amount and take the first (latest) request for each amount
+        Map<Double, WithdrawRequest> latestRequests = allRequests.stream()
+            .collect(Collectors.toMap(
+                WithdrawRequest::getAmount,
+                req -> req,
+                (existing, replacement) -> existing)); // Keep first occurrence (latest due to sort)
+        
+        // Convert to response objects
+        return latestRequests.values().stream()
+            .map(req -> new WithdrawRequestResponse(
+                req.getUserId(),
+                req.getAmount(),
+                req.getStatus(),
+                Date.from(req.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant())))
+            .collect(Collectors.toList());
     }
 
     public void approveWithdraw(WithdrawRequest req) {

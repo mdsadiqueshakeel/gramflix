@@ -88,22 +88,22 @@ public class UserController {
         }
     }
 
-    // @GetMapping("/withdraw-requests")
-    // public ResponseEntity<ApiResponse> getUserWithdrawRequests() {
-    //     try {
-    //         String userId = SecurityUtils.getCurrentUserId();
-    //         if (userId == null) {
-    //             logger.log(Level.WARNING, "Unauthorized request: User ID not found in security context.");
-    //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
-    //         }
-    //         List<WithdrawRequestResponse> requests = userService.getUserWithdrawRequests(userId);
-    //         logger.log(Level.INFO, "Fetched withdrawal requests for userId: {0}", userId);
-    //         return ResponseEntity.ok(new ApiResponse(true, "Withdrawal requests fetched successfully", requests));
-    //     } catch (Exception e) {
-    //         logger.log(Level.SEVERE, "Error fetching withdrawal requests", e);
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Failed to fetch withdrawal requests", null));
-    //     }
-    // }
+    @GetMapping("/withdraw-requests")
+    public ResponseEntity<ApiResponse> getUserWithdrawRequests() {
+        try {
+            String userId = SecurityUtils.getCurrentUserId();
+            if (userId == null) {
+                logger.log(Level.WARNING, "Unauthorized request: User ID not found in security context.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
+            }
+            List<WithdrawRequestResponse> requests = userService.getUserWithdrawRequests(userId);
+            logger.log(Level.INFO, "Fetched withdrawal requests for userId: {0}", userId);
+            return ResponseEntity.ok(new ApiResponse(true, "Withdrawal requests fetched successfully", requests));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching withdrawal requests", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse(false, "Failed to fetch withdrawal requests", null));
+        }
+    }
 
     @PostMapping("/withdraw/{amount}")
     public ResponseEntity<ApiResponse> requestWithdraw(@PathVariable Double amount) {
