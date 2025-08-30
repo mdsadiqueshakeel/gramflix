@@ -2,30 +2,30 @@
 
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Star, Zap, Shield, Crown, Check } from "lucide-react";
+import { Star, Banknote, Shield, Crown, Check } from "lucide-react";
 import { fetchUserProfile, isPremiumUser, getPremiumStatus, requestPremium, pollPremiumStatus } from "@/lib/api";
 import { useState, useEffect } from "react";
 
 const benefits = [
   {
     icon: Star,
-    title: "Exclusive Content",
-    description: "Access to premium articles and exclusive stories"
+    title: "Enhanced Referral Rewards",
+    description: "Earn up to 4x more points for every referral milestone."
   },
   {
-    icon: Zap,
-    title: "Ad-Free Experience",
-    description: "Enjoy reading without any advertisements"
+    icon: Crown,
+    title: "Premium Referral Bonus",
+    description: "Get a massive 200 points for each friend who goes premium."
+  },
+  {
+    icon: Banknote,
+    title: "Unlock Withdrawals",
+    description: "Be eligible to withdraw your first ₹100 and future earnings."
   },
   {
     icon: Shield,
     title: "Priority Support",
-    description: "Get faster customer support response"
-  },
-  {
-    icon: Crown,
-    title: "Early Access",
-    description: "Be the first to read breaking news and features"
+    description: "Get faster, prioritized responses from our admin team."
   }
 ];
 
@@ -167,28 +167,29 @@ export default function PremiumContent({ onUpgradeClick }) {
       </div>
 
       {/* Pricing Section */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg mb-6 border border-yellow-200 dark:border-yellow-800">
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-3">
-            <span className="text-4xl font-bold text-yellow-600">₹449</span>
-            <span className="text-lg text-muted-foreground line-through">₹999</span>
-            <span className="text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full font-medium">
-              55% OFF
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            One-time payment • Lifetime access
-          </p>
-          
-          <Button
-            onClick={handleUpgradeNow}
-            disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-moderate hover:shadow-strong"
-          >
-            {isSubmitting ? "Processing..." : "Upgrade Now - ₹449"}
-          </Button>
-        </div>
-      </div>
+  {/* Import at the top of your file: import { Check, MessageSquare } from "lucide-react"; */}
+
+{/* Import at the top of your file: import { MessageSquare } from "lucide-react"; */}
+
+<div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+  <div className="text-center">
+    <h3 className="text-xl font-bold text-foreground mb-2">
+      Ready for Premium?
+    </h3>
+    <p className="text-sm text-muted-foreground mb-4">
+      Get lifetime access to enhanced rewards, withdrawals, and more by requesting an upgrade directly from an admin.
+    </p>
+    
+    {/* Action Button */}
+    <Button
+      onClick={handleRequestUpgrade} // Assuming you have a function with this name
+      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-moderate hover:shadow-strong"
+    >
+      <MessageSquare className="mr-2 h-5 w-5" />
+      Contact Admin to Upgrade
+    </Button>
+  </div>
+</div>
 
       {/* Trust Indicators */}
       <div className="flex items-center justify-center space-x-8 text-xs text-muted-foreground">

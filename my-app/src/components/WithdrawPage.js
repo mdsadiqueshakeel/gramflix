@@ -10,12 +10,12 @@ import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, 
 function WithdrawPage({ onNavigate }) {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState(null);
+  const [childrenSummary, setChildrenSummary] = useState(null);
   const [walletSummary, setWalletSummary] = useState(null);
   const [withdrawRequests, setWithdrawRequests] = useState([]);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState(null);
-  const [childrenSummary, setChildrenSummary] = useState(null);
 
   const walletBalance = walletSummary?.walletBalance ?? 0
   const earnings = {
@@ -36,6 +36,19 @@ function WithdrawPage({ onNavigate }) {
       }
     };
     loadProfile();
+  }, []);
+
+  // Fetch children summary
+  useEffect(() => {
+    const loadChildren = async () => {
+      try {
+        const children = await fetchChildrenSummary();
+        setChildrenSummary(children);
+      } catch (error) {
+        console.error("Error loading children summary:", error);
+      }
+    };
+    loadChildren();
   }, []);
 
   // Fetch wallet summary
@@ -67,19 +80,6 @@ function WithdrawPage({ onNavigate }) {
     loadWithdrawRequests();
   }, []);
 
-  // Fetch children summary
-  useEffect(() => {
-    const loadChildren = async () => {
-      try {
-        const summary = await fetchChildrenSummary();
-        setChildrenSummary(summary);
-      } catch (error) {
-        console.error("Error loading children summary:", error);
-      }
-    };
-    loadChildren();
-  }, []);
-
   // Check withdrawal eligibility based on backend logic
   const getWithdrawalEligibility = () => {
     if (!userProfile || getPremiumStatus(userProfile) !== "PREMIUM") {
@@ -90,15 +90,32 @@ function WithdrawPage({ onNavigate }) {
         reason: "Premium membership required"
       };
     }
+
     const hasWithdrawn100 = userProfile.hasWithdrawn100 || false;
     const hasWithdrawn900 = userProfile.hasWithdrawn900 || false;
-    // Use childrenSummary for premiumUsers and totalChildren
-    const premiumUsers = childrenSummary?.premiumUsers || 0;
-    const totalChildren = childrenSummary?.totalChildren || 0;
+    const referredChildBoughtPremium = userProfile.referredChildBoughtPremium || false;
+    
+    // FIXED: Get premium referrals count from fetchChildrenSummary()
+    const referredChildrenWithPremium = childrenSummary?.premiumUsers || 0;
+
+    // DEBUG: Log the values to console
+    console.log("DEBUG - Eligibility Check:", {
+      userProfile: userProfile,
+      childrenSummary: childrenSummary,
+      walletBalance: walletBalance,
+      referredChildrenWithPremium: referredChildrenWithPremium,
+      premiumUsers: childrenSummary?.premiumUsers,
+      totalChildren: childrenSummary?.totalChildren,
+      hasWithdrawn100,
+      hasWithdrawn900,
+      referredChildBoughtPremium
+    });
+
     return {
       canWithdraw100: !hasWithdrawn100 && walletBalance >= 100,
-      canWithdraw900: !hasWithdrawn900 && premiumUsers >= 1 && walletBalance >= 900,
-      canWithdraw3000: totalChildren >= 2 && walletBalance >= 3000,
+      canWithdraw900: !hasWithdrawn900 && referredChildBoughtPremium && walletBalance >= 900,
+      // FIXED: Check if user has exactly 2 premium referrals (2nd referral gets premium)
+      canWithdraw3000: referredChildrenWithPremium === 2 && walletBalance >= 3000,
       reason: null
     };
   };
@@ -114,11 +131,13 @@ function WithdrawPage({ onNavigate }) {
   // Get withdrawal date for specific amounts
   const getWithdrawalDate = (amount) => {
     const request = withdrawRequests.find(req => req.amount === amount);
-    return request ? new Date(request.updatedAt).toLocaleDateString() : null;
+    return request ? new Date(request.updatedAt || request.createdAt).toLocaleDateString() : null;
   };
 
-  // Check if withdrawal is already claimed (approved)
+  // Check if withdrawal is already claimed (approved) - for one-time withdrawals only
   const isWithdrawalClaimed = (amount) => {
+    // FIXED: ₹3000 is unlimited, so never mark as claimed
+    if (amount === 3000) return false;
     return getWithdrawalStatus(amount) === "APPROVED";
   };
 
@@ -132,35 +151,70 @@ function WithdrawPage({ onNavigate }) {
     return getWithdrawalStatus(amount) === "REJECTED";
   };
 
-  const handleWithdraw = async (amount) => {
-    if (isSubmitting) return;
-    
-    setWithdrawAmount(amount);
-    setIsSubmitting(true);
-    
-    try {
-      await requestWithdraw(amount);
-      
-      // Refresh profile to get updated withdrawal flags
-      const refreshedProfile = await fetchUserProfile();
-      setUserProfile(refreshedProfile);
-      
-      // Refresh wallet to get updated balance
-      const refreshedWallet = await fetchWalletSummary();
-      setWalletSummary(refreshedWallet);
-      
-      // Refresh withdrawal requests to get updated status
-      const refreshedRequests = await fetchWithdrawRequests();
-      setWithdrawRequests(refreshedRequests);
-      
-      alert(`Withdrawal request of ₹${amount} submitted successfully!`);
-    } catch (error) {
-      alert(`Withdrawal failed: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-      setWithdrawAmount(null);
+ const handleWithdraw = async (amount) => {
+  if (isSubmitting) return;
+
+  setWithdrawAmount(amount);
+  setIsSubmitting(true);
+
+  try {
+    // 1️⃣ Open WhatsApp immediately (so popup isn't blocked)
+    const adminPhoneNumber = "919155649575";
+    const message = `Hi Admin 👋,
+
+I want to request a withdrawal of ₹${amount}.
+Please review my request and approve it. 🙏
+
+My current wallet balance: ₹${walletBalance}.
+User ID: ${userProfile?.id || "N/A"}
+
+Thanks!
+— Your App User`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${adminPhoneNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+
+    // 2️⃣ Still send withdrawal request to server
+    await requestWithdraw(amount);
+
+    // Optimistic UI update
+    if (walletSummary) {
+      setWalletSummary({
+        ...walletSummary,
+        walletBalance: walletSummary.walletBalance - amount,
+      });
     }
-  };
+
+    // 3️⃣ Refresh everything
+    const refreshedProfile = await fetchUserProfile();
+    setUserProfile(refreshedProfile);
+
+    const refreshedChildren = await fetchChildrenSummary();
+    setChildrenSummary(refreshedChildren);
+
+    const refreshedWallet = await fetchWalletSummary();
+    setWalletSummary(refreshedWallet);
+
+    const refreshedRequests = await fetchWithdrawRequests();
+    setWithdrawRequests(refreshedRequests);
+
+    alert(`Withdrawal request of ₹${amount} submitted successfully!`);
+  } catch (error) {
+    // Revert optimistic update if needed
+    if (walletSummary) {
+      setWalletSummary({
+        ...walletSummary,
+        walletBalance: walletSummary.walletBalance,
+      });
+    }
+    alert(`Withdrawal failed: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+    setWithdrawAmount(null);
+  }
+};
+
 
   const withdrawalOptions = [
     {
@@ -175,7 +229,8 @@ function WithdrawPage({ onNavigate }) {
       requirement: "Premium membership required",
       status: getWithdrawalStatus(100),
       claimedDate: getWithdrawalDate(100),
-      isRejected: isWithdrawalRejected(100)
+      isRejected: isWithdrawalRejected(100),
+      isUnlimited: false
     },
     {
       amount: 900,
@@ -189,7 +244,8 @@ function WithdrawPage({ onNavigate }) {
       requirement: "1st referral must be premium",
       status: getWithdrawalStatus(900),
       claimedDate: getWithdrawalDate(900),
-      isRejected: isWithdrawalRejected(900)
+      isRejected: isWithdrawalRejected(900),
+      isUnlimited: false
     },
     {
       amount: 3000,
@@ -199,8 +255,9 @@ function WithdrawPage({ onNavigate }) {
       color: "text-blue-600",
       bg: "bg-blue-50 dark:bg-blue-900/20",
       border: "border-blue-200 dark:border-blue-800",
+      // FIXED: Remove isWithdrawalClaimed check for unlimited withdrawals
       canWithdraw: eligibility.canWithdraw3000 && !isWithdrawalPending(3000),
-      requirement: "2+ premium referrals required",
+      requirement: "Exactly 2 premium referrals required",
       status: getWithdrawalStatus(3000),
       claimedDate: getWithdrawalDate(3000),
       isRejected: isWithdrawalRejected(3000),
@@ -268,7 +325,7 @@ function WithdrawPage({ onNavigate }) {
                 const Icon = option.icon;
                 const isDisabled = !option.canWithdraw || isSubmitting;
                 const isProcessing = isSubmitting && withdrawAmount === option.amount;
-                const isClaimed = option.status === "APPROVED";
+                const isClaimed = option.status === "APPROVED" && !option.isUnlimited; // FIXED: Don't mark unlimited as claimed
                 const isPending = option.status === "PENDING";
                 const isRejected = option.status === "REJECTED";
                 
@@ -278,42 +335,49 @@ function WithdrawPage({ onNavigate }) {
                       ? `${option.border} ${option.bg} hover:border-opacity-60` 
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${option.bg}`}>
+                    {/* Mobile-first responsive layout */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg ${option.bg} flex-shrink-0`}>
                           <Icon className={`h-5 w-5 ${option.color}`} />
                         </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xl font-bold text-foreground">{option.label}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 flex-wrap">
+                            <span className="text-lg sm:text-xl font-bold text-foreground">{option.label}</span>
                             {option.canWithdraw && (
-                              <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
+                              <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full whitespace-nowrap">
                                 Available
                               </span>
                             )}
-                            {isClaimed && (
-                              <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full">
+                            {/* FIXED: Only show "Claimed" for one-time withdrawals */}
+                            {isClaimed && !option.isUnlimited && (
+                              <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full whitespace-nowrap">
                                 Claimed
                               </span>
                             )}
                             {isPending && (
-                              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full">
+                              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full whitespace-nowrap">
                                 Pending
                               </span>
                             )}
                             {isRejected && (
-                              <span className="text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full">
+                              <span className="text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full whitespace-nowrap">
                                 Rejected
                               </span>
                             )}
+                            {option.isUnlimited && (
+                              <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-1 rounded-full whitespace-nowrap">
+                                Unlimited
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground">{option.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
                           {!option.canWithdraw && !isClaimed && !isPending && (
                             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                               {option.requirement}
                             </p>
                           )}
-                          {isClaimed && option.claimedDate && (
+                          {isClaimed && option.claimedDate && !option.isUnlimited && (
                             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                               Claimed on {option.claimedDate}
                             </p>
@@ -326,34 +390,46 @@ function WithdrawPage({ onNavigate }) {
                         </div>
                       </div>
                       
-                      <Button 
-                        onClick={() => handleWithdraw(option.amount)}
-                        disabled={isDisabled || isClaimed || isPending}
-                        className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                          isProcessing
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : isClaimed
-                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                              : isPending
-                                ? 'bg-yellow-400 text-yellow-800 cursor-not-allowed'
-                                : option.canWithdraw
-                                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                        }`}
-                      >
-                        {isProcessing ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Processing...</span>
-                          </div>
-                        ) : isClaimed ? (
-                          'Already Claimed'
-                        ) : isPending ? (
-                          'Pending'
-                        ) : (
-                          option.canWithdraw ? 'Withdraw' : 'Locked'
-                        )}
-                      </Button>
+                      {/* Button with responsive sizing */}
+                      <div className="flex-shrink-0 w-full sm:w-auto">
+                        <Button 
+                          onClick={() => handleWithdraw(option.amount)}
+                          disabled={isDisabled || (isClaimed && !option.isUnlimited) || isPending} // FIXED: Allow unlimited withdrawals even after approval
+                          className={`w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
+                            isProcessing
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : isClaimed && !option.isUnlimited
+                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                : isPending
+                                  ? 'bg-yellow-400 text-yellow-800 cursor-not-allowed'
+                                  : option.canWithdraw
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                          }`}
+                        >
+                          {isProcessing ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span className="hidden sm:inline">Processing...</span>
+                              <span className="sm:hidden">...</span>
+                            </div>
+                          ) : isClaimed && !option.isUnlimited ? (
+                            <>
+                              <span className="block sm:hidden">Claimed</span>
+                              <span className="hidden sm:block">Already Claimed</span>
+                            </>
+                          ) : isPending ? (
+                            'Pending'
+                          ) : option.canWithdraw ? (
+                            'Withdraw'
+                          ) : (
+                            <div className="flex items-center justify-center space-x-2">
+                              <Lock className="w-4 h-4" />
+                              <span>Locked</span>
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -417,7 +493,7 @@ function WithdrawPage({ onNavigate }) {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• ₹100: One-time only, requires premium membership</li>
                 <li>• ₹900: One-time only, after 1st referral gets premium</li>
-                <li>• ₹3000: Unlimited, after 2nd referral gets premium</li>
+                <li>• ₹3000: Unlimited, after exactly 2 referrals get premium</li>
                 <li>• Processing time: 1-24 business hours</li>
                 <li>• TDS & Admin charges: 10% total</li>
               </ul>

@@ -285,7 +285,7 @@ export default function ProfilePage() {
                 <p className="font-medium text-foreground">{userProfile?.status || "—"}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Referral ID</span>
+                <span className="text-xs text-muted-foreground">Referral Code</span>
                 <p className="font-medium text-foreground">{userProfile?.referralId || "—"}</p>
               </div>
             </div>

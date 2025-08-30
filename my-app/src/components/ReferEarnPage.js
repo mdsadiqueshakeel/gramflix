@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
-import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2, DollarSign, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Copy, Gift, Users, Crown, Check, Share, ExternalLink, Share2, DollarSign, CheckCircle, MessageCircle, Send, Twitter, Facebook } from 'lucide-react'
 import { useRouter } from "next/navigation";
 import { fetchUserProfile, isPremiumUser, getPremiumStatus, fetchChildrenSummary, fetchWithdrawRequests } from "@/lib/api";
 
@@ -146,8 +146,10 @@ function ReferEarnPage({ onNavigate }) {
     return request ? new Date(request.updatedAt).toLocaleDateString() : null;
   };
 
-  // Check if withdrawal is already claimed (approved)
+  // Check if withdrawal is already claimed (approved) - for one-time withdrawals only
   const isWithdrawalClaimed = (amount) => {
+    // FIXED: ₹3000 is unlimited, so never mark as claimed
+    if (amount === 3000) return false;
     return getWithdrawalStatus(amount) === "APPROVED";
   };
 
@@ -236,7 +238,7 @@ function ReferEarnPage({ onNavigate }) {
                   className="rounded-lg"
                   onClick={() => handleSocialShare('whatsapp')}
                 >
-                  <span className="text-green-600 text-sm font-bold">WA</span>
+                  <MessageCircle className="text-green-600 w-4 h-4" />
                 </Button>
                 <Button 
                   variant="outline" 
@@ -244,7 +246,7 @@ function ReferEarnPage({ onNavigate }) {
                   className="rounded-lg"
                   onClick={() => handleSocialShare('telegram')}
                 >
-                  <span className="text-blue-600 text-sm font-bold">TG</span>
+                  <Send className="text-blue-600 w-4 h-4" />
                 </Button>
                 <Button 
                   variant="outline" 
@@ -252,7 +254,7 @@ function ReferEarnPage({ onNavigate }) {
                   className="rounded-lg"
                   onClick={() => handleSocialShare('twitter')}
                 >
-                  <span className="text-blue-400 text-sm font-bold">X</span>
+                  <Twitter className="text-blue-400 w-4 h-4" />
                 </Button>
                 <Button 
                   variant="outline" 
@@ -260,7 +262,7 @@ function ReferEarnPage({ onNavigate }) {
                   className="rounded-lg"
                   onClick={() => handleSocialShare('facebook')}
                 >
-                  <span className="text-blue-700 text-sm font-bold">FB</span>
+                  <Facebook className="text-blue-700 w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -370,38 +372,34 @@ function ReferEarnPage({ onNavigate }) {
               </div>
               
               <div className={`flex items-center justify-between p-3 rounded-lg border ${
-                childrenSummary?.totalChildren >= 2
+                childrenSummary?.premiumUsers === 2
                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                   : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
               }`}>
                 <div className="flex items-center space-x-3">
                   <Users className={`h-5 w-5 ${
-                    childrenSummary?.totalChildren >= 2 ? 'text-blue-600' : 'text-gray-400'
+                    childrenSummary?.premiumUsers === 2 ? 'text-blue-600' : 'text-gray-400'
                   }`} />
                   <div>
                     <div className="font-medium text-foreground">₹3000 Withdrawal</div>
                     <div className="text-sm text-muted-foreground">
-                      {isWithdrawalClaimed(3000)
-                        ? `Last claimed on ${getWithdrawalDate(3000)} (unlimited)`
-                        : isWithdrawalPending(3000)
-                          ? 'Request pending approval'
-                          : childrenSummary?.totalChildren >= 2 
-                            ? 'Available after 2+ referrals (unlimited)' 
-                            : `Requires ${2 - (childrenSummary?.totalChildren || 0)} more referrals`
+                      {isWithdrawalPending(3000)
+                        ? 'Request pending approval (unlimited)'
+                        : childrenSummary?.premiumUsers === 2 
+                          ? 'Available - unlimited withdrawals' 
+                          : `Requires exactly 2 premium referrals (current: ${childrenSummary?.premiumUsers || 0})`
                       }
                     </div>
                   </div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  isWithdrawalClaimed(3000)
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    : isWithdrawalPending(3000)
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : childrenSummary?.totalChildren >= 2
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  isWithdrawalPending(3000)
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : childrenSummary?.premiumUsers === 2
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                 }`}>
-                  {isWithdrawalClaimed(3000) ? 'Claimed' : isWithdrawalPending(3000) ? 'Pending' : childrenSummary?.totalChildren >= 2 ? 'Available' : 'Locked'}
+                  {isWithdrawalPending(3000) ? 'Pending' : childrenSummary?.premiumUsers === 2 ? 'Available' : 'Locked'}
                 </span>
               </div>
             </div>
