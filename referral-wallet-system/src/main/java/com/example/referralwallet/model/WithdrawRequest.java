@@ -3,7 +3,8 @@ package com.example.referralwallet.model;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
-import java.util.Date;
+
+import java.time.LocalDateTime;
 
 @Data
 public class WithdrawRequest {
@@ -12,6 +13,6 @@ public class WithdrawRequest {
     private String userId;
     private double amount;
     private String status = "PENDING"; // PENDING | APPROVED | REJECTED
-    private Date createdAt = new Date();
-    private Date updatedAt = new Date();
+    private LocalDateTime createdAt;
+
 }

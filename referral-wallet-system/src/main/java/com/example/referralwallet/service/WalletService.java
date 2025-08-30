@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.DayOfWeek;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,7 @@ public class WalletService {
         wallet.setThisWeekEarning(wallet.getThisWeekEarning() + amount);
         wallet.setTotalEarning(wallet.getTotalEarning() + amount);
         wallet.setTotalWithdrawal(wallet.getTotalWithdrawal()+amount);
-        wallet.getWalletHistory().add(new WalletTransaction("BONUS", amount, meta, LocalDateTime.now()));
+        wallet.getWalletHistory().add(new WalletTransaction("BONUS", amount, meta, new Date()));
 
         wallet.setUpdatedAt(LocalDateTime.now());
         walletRepository.save(wallet);
@@ -50,7 +51,7 @@ public class WalletService {
         if (wallet.getWalletBalance() < amount) throw new RuntimeException("Insufficient balance.");
 
         wallet.setWalletBalance(wallet.getWalletBalance() - amount);
-        wallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -amount, "Withdraw approved", LocalDateTime.now()));
+        wallet.getWalletHistory().add(new WalletTransaction("WITHDRAW", -amount, "Withdraw approved", new Date()));
 
         wallet.setUpdatedAt(LocalDateTime.now());
         walletRepository.save(wallet);

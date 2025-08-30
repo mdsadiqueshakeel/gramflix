@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Date;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,19 +51,25 @@ public class UserService {
             throw new RuntimeException("❌ Withdraw amount must be 100, 900, or 3000");
 
         // Lifetime Restriction Checks
+        // Check for Previous APPROVED Requests:
+        List<WithdrawRequest> approved100Requests = withdrawRequestRepository.findByUserIdAndStatusOrderByCreatedAtDesc(user.getId(), "APPROVED");
         if (amount == 100) {
-            if (user.isHasWithdrawn100()) {
+            boolean alreadyWithdrew100 = approved100Requests.stream().anyMatch(req -> req.getAmount() == 100);
+            if (alreadyWithdrew100) {
                 throw new RuntimeException("❌ You already withdrew ₹100 once.");
             }
         } else if (amount == 900) {
-            if (user.isHasWithdrawn900()) {
+            boolean alreadyWithdrew900 = approved100Requests.stream().anyMatch(req -> req.getAmount() == 900);
+            if (alreadyWithdrew900) {
                 throw new RuntimeException("❌ You already withdrew ₹900 once.");
             }
+            // Referral Check for ₹900:
             if (!user.isReferredChildBoughtPremium()) {
                 throw new RuntimeException("❌ You can withdraw ₹900 only after a referred child buys premium.");
             }
         }
 
+        // Balance Check (Prevention):
         if (wallet.getWalletBalance() < amount)
             throw new RuntimeException("⚠️ Insufficient wallet balance");
 
@@ -70,15 +77,11 @@ public class UserService {
         req.setUserId(userId);
         req.setAmount(amount);
         req.setStatus("PENDING");
+        req.setCreatedAt(LocalDateTime.now());
         withdrawRequestRepository.save(req);
 
-        // Update user's withdrawal flags
-        if (amount == 100) {
-            user.setHasWithdrawn100(true);
-        } else if (amount == 900) {
-            user.setHasWithdrawn900(true);
-        }
-        userRepository.save(user);
+        // Do not update any withdrawal flags yet.
+        // The hasWithdrawn100 and hasWithdrawn900 flags are updated only upon successful approval.
 
         String withdrawApproveLink = "http://localhost:8080/api/admin/withdraw/approve/" + req.getId();
         String withdrawRejectLink = "http://localhost:8080/api/admin/withdraw/reject/" + req.getId();
@@ -196,6 +199,7 @@ public class UserService {
 
     // ==================== APPROVE WITHDRAW (FOR ADMIN) ====================
     public List<WithdrawRequestResponse> getUserWithdrawRequests(String userId) {
+        // The `updatedAt` field was removed from `WithdrawRequest.java`, so `getUpdatedAt()` is no longer available.
         List<WithdrawRequest> allRequests = withdrawRequestRepository.findByUserId(userId);
         List<WithdrawRequestResponse> filteredRequests = new ArrayList<>();
 
@@ -203,7 +207,7 @@ public class UserService {
         for (WithdrawRequest req : allRequests) {
             if (req.getAmount() == 100 || req.getAmount() == 900) {
                 filteredRequests.add(new WithdrawRequestResponse(
-                        req.getUserId(), req.getAmount(), req.getStatus(), req.getCreatedAt(), req.getUpdatedAt()));
+                    req.getUserId(), req.getAmount(), req.getStatus(), Date.from(req.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()))); // updatedAt removed
             }
         }
 
@@ -215,8 +219,7 @@ public class UserService {
                     amount3000Requests.get(0).getUserId(),
                     amount3000Requests.get(0).getAmount(),
                     amount3000Requests.get(0).getStatus(),
-                    amount3000Requests.get(0).getCreatedAt(),
-                    amount3000Requests.get(0).getUpdatedAt()));
+                    Date.from(amount3000Requests.get(0).getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()))); // updatedAt removed
         }
 
         return filteredRequests;
@@ -226,13 +229,28 @@ public class UserService {
         User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         Wallet wallet = walletRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Wallet not found"));
 
+        // Final Balance Check (Extra Safety):
+        if (wallet.getWalletBalance() < req.getAmount()) {
+            throw new RuntimeException("⚠️ Insufficient wallet balance for approval. Current balance: " + wallet.getWalletBalance() + ", requested: " + req.getAmount());
+        }
+
+        // Deduct Wallet Balance:
         wallet.setWalletBalance(wallet.getWalletBalance() - req.getAmount());
         wallet.setTotalWithdrawal(wallet.getTotalWithdrawal() + req.getAmount());
-        wallet.getWalletHistory().add(new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now()));
+        wallet.getWalletHistory().add(new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", new Date()));
         walletRepository.save(wallet);
 
+        // Mark Request Approved:
         req.setStatus("APPROVED");
         withdrawRequestRepository.save(req);
+
+        // Now update withdrawal flags:
+        if (req.getAmount() == 100) {
+            user.setHasWithdrawn100(true);
+        } else if (req.getAmount() == 900) {
+            user.setHasWithdrawn900(true);
+        }
+        userRepository.save(user);
 
         System.out.println("✅ [DEBUG] Withdraw approved for " + user.getEmail() + ", amount=" + req.getAmount());
     }
@@ -240,8 +258,8 @@ public class UserService {
     // ==================== REJECT WITHDRAW (FOR ADMIN) ====================
     public void rejectWithdraw(WithdrawRequest req) {
         User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        // Optionally, you might want to revert the wallet balance or add a transaction for rejection
-        // For now, just update the status
+
+        // Do Not Touch Wallet or Flags:
         req.setStatus("REJECTED");
         withdrawRequestRepository.save(req);
 

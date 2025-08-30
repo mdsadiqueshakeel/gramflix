@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +53,7 @@ public class AdminService {
             userWallet.setWalletBalance(userWallet.getWalletBalance() - req.getAmount());
             userWallet.setTotalWithdrawal(userWallet.getTotalWithdrawal() + req.getAmount());
             userWallet.getWalletHistory().add(
-                    new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", LocalDateTime.now())
+                    new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", new Date())
             );
             walletRepository.save(userWallet);
 

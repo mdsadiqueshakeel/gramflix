@@ -1,7 +1,7 @@
 package com.example.referralwallet.service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
+ import java.util.Date;
 
 import org.springframework.stereotype.Service;
 
@@ -70,10 +70,9 @@ public class ReferralService {
                 type.name(),
                 points,
                 description,
-                LocalDateTime.now()
+                new Date()
         );
         wallet.getWalletHistory().add(transaction);
-        wallet.setUpdatedAt(LocalDateTime.now());
         walletRepository.save(wallet);
     }
 }

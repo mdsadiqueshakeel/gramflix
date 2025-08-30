@@ -18,7 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.example.referralwallet.dto.ApiResponse;
 import com.example.referralwallet.security.JwtAuthenticationFilter;
-import com.example.referralwallet.config.CorsConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,8 +41,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin/premium/approve/", "/api/admin/withdraw/approve/",
-                                "/api/admin/premium/reject/", "/api/admin/withdraw/reject/")
+                        .requestMatchers("/api/admin/premium/approve/**", "/api/admin/withdraw/approve/**",
+                                "/api/admin/premium/reject/**", "/api/admin/withdraw/reject/**")
                         .permitAll() // Permit admin approval/rejection without authentication
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers(

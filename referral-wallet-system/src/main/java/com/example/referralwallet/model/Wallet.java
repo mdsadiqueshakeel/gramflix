@@ -1,13 +1,15 @@
 package com.example.referralwallet.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -18,6 +20,15 @@ public class Wallet {
     private String userId;
     private double walletBalance = 0.0;
     private List<WalletTransaction> walletHistory = new ArrayList<>();
+    private double totalCredit = 0.0;
+
+    public Wallet(String userId, double initialBalance) {
+        this.userId = userId;
+        this.walletBalance = initialBalance;
+        this.totalCredit = initialBalance;
+        this.totalWithdrawal = 0.0;
+        this.walletHistory.add(new WalletTransaction(WalletTransaction.TransactionType.CREDIT.name(), initialBalance, "Initial balance", new Date()));
+    }
     private double todaysEarning = 0.0;
     private double thisWeekEarning = 0.0;
     private double totalEarning = 0.0;

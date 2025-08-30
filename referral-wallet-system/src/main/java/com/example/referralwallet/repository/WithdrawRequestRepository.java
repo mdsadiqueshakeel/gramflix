@@ -10,4 +10,5 @@ public interface WithdrawRequestRepository extends MongoRepository<WithdrawReque
     List<WithdrawRequest> findByStatus(String status);
     List<WithdrawRequest> findByUserId(String userId);
     List<WithdrawRequest> findByUserIdAndAmount(String userId, double amount, Sort sort);
+    List<WithdrawRequest> findByUserIdAndStatusOrderByCreatedAtDesc(String userId, String status);
 }
