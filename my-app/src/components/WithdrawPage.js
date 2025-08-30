@@ -5,7 +5,7 @@ import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Crown, Users, Lock } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, requestWithdraw, fetchWithdrawRequests } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, requestWithdraw, fetchWithdrawRequests, fetchChildrenSummary } from "@/lib/api";
 
 function WithdrawPage({ onNavigate }) {
   const router = useRouter();
@@ -15,6 +15,7 @@ function WithdrawPage({ onNavigate }) {
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState(null);
+  const [childrenSummary, setChildrenSummary] = useState(null);
 
   const walletBalance = walletSummary?.walletBalance ?? 0
   const earnings = {
@@ -66,6 +67,19 @@ function WithdrawPage({ onNavigate }) {
     loadWithdrawRequests();
   }, []);
 
+  // Fetch children summary
+  useEffect(() => {
+    const loadChildren = async () => {
+      try {
+        const summary = await fetchChildrenSummary();
+        setChildrenSummary(summary);
+      } catch (error) {
+        console.error("Error loading children summary:", error);
+      }
+    };
+    loadChildren();
+  }, []);
+
   // Check withdrawal eligibility based on backend logic
   const getWithdrawalEligibility = () => {
     if (!userProfile || getPremiumStatus(userProfile) !== "PREMIUM") {
@@ -76,15 +90,14 @@ function WithdrawPage({ onNavigate }) {
         reason: "Premium membership required"
       };
     }
-
     const hasWithdrawn100 = userProfile.hasWithdrawn100 || false;
     const hasWithdrawn900 = userProfile.hasWithdrawn900 || false;
-    const referredChildBoughtPremium = userProfile.referredChildBoughtPremium || false;
-    const totalChildren = userProfile.totalChildren || 0;
-
+    // Use childrenSummary for premiumUsers and totalChildren
+    const premiumUsers = childrenSummary?.premiumUsers || 0;
+    const totalChildren = childrenSummary?.totalChildren || 0;
     return {
       canWithdraw100: !hasWithdrawn100 && walletBalance >= 100,
-      canWithdraw900: !hasWithdrawn900 && referredChildBoughtPremium && walletBalance >= 900,
+      canWithdraw900: !hasWithdrawn900 && premiumUsers >= 1 && walletBalance >= 900,
       canWithdraw3000: totalChildren >= 2 && walletBalance >= 3000,
       reason: null
     };

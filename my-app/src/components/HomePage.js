@@ -197,7 +197,7 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
         )}
 
         {/* Title Section */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${
             getPremiumStatus(userProfile) === "PREMIUM" 
               ? "text-yellow-600" 
@@ -206,10 +206,10 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
           <p className="text-muted-foreground text-sm md:text-base">
             Stay updated with the latest stories from around the world
           </p>
-        </div>
+        </div> */}
 
         {/* Category Filter */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
             {categories.map((category) => (
               <Badge
@@ -228,7 +228,7 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
               </Badge>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* News Feed */}
         <NewsFeed isPremiumUser={getPremiumStatus(userProfile) === "PREMIUM"} />

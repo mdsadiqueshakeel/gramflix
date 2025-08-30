@@ -179,7 +179,7 @@ function LoginPage({ onNavigate, onLogin }) {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-card text-muted-foreground">
-                New to Newzia?
+                New to GramFlix?
               </span>
             </div>
           </div>
