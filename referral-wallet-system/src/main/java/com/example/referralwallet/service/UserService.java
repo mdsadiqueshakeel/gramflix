@@ -70,6 +70,14 @@ public class UserService {
             if (!user.isReferredChildBoughtPremium()) {
                 throw new RuntimeException("❌ You can withdraw ₹900 only after a referred child buys premium.");
             }
+        } else if (amount == 3000) {
+            // Referral Check for ₹3000:
+            if (user.getChildren().size() < 2 || user.getChildren().stream().filter(childId -> {
+                User childUser = userRepository.findById(childId).orElse(null);
+                return childUser != null && "PREMIUM".equals(childUser.getUserType());
+            }).count() < 2) {
+                throw new RuntimeException("❌ You can withdraw ₹3000 only after 2 referred children buy premium.");
+            }
         }
 
         // Balance Check (Prevention):
