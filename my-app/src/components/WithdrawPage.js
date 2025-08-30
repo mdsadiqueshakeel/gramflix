@@ -5,12 +5,13 @@ import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { ArrowLeft, Wallet, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Crown, Users, Lock } from 'lucide-react'
 import { useRouter } from "next/navigation";
-import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, requestWithdraw } from "@/lib/api";
+import { fetchUserProfile, isPremiumUser, fetchWalletSummary, getPremiumStatus, requestWithdraw, fetchWithdrawRequests } from "@/lib/api";
 
 function WithdrawPage({ onNavigate }) {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState(null);
   const [walletSummary, setWalletSummary] = useState(null);
+  const [withdrawRequests, setWithdrawRequests] = useState([]);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState(null);
@@ -52,6 +53,19 @@ function WithdrawPage({ onNavigate }) {
     loadWallet();
   }, []);
 
+  // Fetch withdrawal requests
+  useEffect(() => {
+    const loadWithdrawRequests = async () => {
+      try {
+        const requests = await fetchWithdrawRequests();
+        setWithdrawRequests(requests);
+      } catch (error) {
+        console.error("Error loading withdrawal requests:", error);
+      }
+    };
+    loadWithdrawRequests();
+  }, []);
+
   // Check withdrawal eligibility based on backend logic
   const getWithdrawalEligibility = () => {
     if (!userProfile || getPremiumStatus(userProfile) !== "PREMIUM") {
@@ -78,6 +92,33 @@ function WithdrawPage({ onNavigate }) {
 
   const eligibility = getWithdrawalEligibility();
 
+  // Get withdrawal status for specific amounts
+  const getWithdrawalStatus = (amount) => {
+    const request = withdrawRequests.find(req => req.amount === amount);
+    return request ? request.status : null;
+  };
+
+  // Get withdrawal date for specific amounts
+  const getWithdrawalDate = (amount) => {
+    const request = withdrawRequests.find(req => req.amount === amount);
+    return request ? new Date(request.updatedAt).toLocaleDateString() : null;
+  };
+
+  // Check if withdrawal is already claimed (approved)
+  const isWithdrawalClaimed = (amount) => {
+    return getWithdrawalStatus(amount) === "APPROVED";
+  };
+
+  // Check if withdrawal is pending
+  const isWithdrawalPending = (amount) => {
+    return getWithdrawalStatus(amount) === "PENDING";
+  };
+
+  // Check if withdrawal is rejected
+  const isWithdrawalRejected = (amount) => {
+    return getWithdrawalStatus(amount) === "REJECTED";
+  };
+
   const handleWithdraw = async (amount) => {
     if (isSubmitting) return;
     
@@ -94,6 +135,10 @@ function WithdrawPage({ onNavigate }) {
       // Refresh wallet to get updated balance
       const refreshedWallet = await fetchWalletSummary();
       setWalletSummary(refreshedWallet);
+      
+      // Refresh withdrawal requests to get updated status
+      const refreshedRequests = await fetchWithdrawRequests();
+      setWithdrawRequests(refreshedRequests);
       
       alert(`Withdrawal request of ₹${amount} submitted successfully!`);
     } catch (error) {
@@ -113,8 +158,11 @@ function WithdrawPage({ onNavigate }) {
       color: "text-green-600",
       bg: "bg-green-50 dark:bg-green-900/20",
       border: "border-green-200 dark:border-green-800",
-      canWithdraw: eligibility.canWithdraw100,
-      requirement: "Premium membership required"
+      canWithdraw: eligibility.canWithdraw100 && !isWithdrawalClaimed(100) && !isWithdrawalPending(100),
+      requirement: "Premium membership required",
+      status: getWithdrawalStatus(100),
+      claimedDate: getWithdrawalDate(100),
+      isRejected: isWithdrawalRejected(100)
     },
     {
       amount: 900,
@@ -124,8 +172,11 @@ function WithdrawPage({ onNavigate }) {
       color: "text-yellow-600",
       bg: "bg-yellow-50 dark:bg-yellow-900/20",
       border: "border-yellow-200 dark:border-yellow-800",
-      canWithdraw: eligibility.canWithdraw900,
-      requirement: "1st referral must be premium"
+      canWithdraw: eligibility.canWithdraw900 && !isWithdrawalClaimed(900) && !isWithdrawalPending(900),
+      requirement: "1st referral must be premium",
+      status: getWithdrawalStatus(900),
+      claimedDate: getWithdrawalDate(900),
+      isRejected: isWithdrawalRejected(900)
     },
     {
       amount: 3000,
@@ -135,8 +186,12 @@ function WithdrawPage({ onNavigate }) {
       color: "text-blue-600",
       bg: "bg-blue-50 dark:bg-blue-900/20",
       border: "border-blue-200 dark:border-blue-800",
-      canWithdraw: eligibility.canWithdraw3000,
-      requirement: "2+ premium referrals required"
+      canWithdraw: eligibility.canWithdraw3000 && !isWithdrawalPending(3000),
+      requirement: "2+ premium referrals required",
+      status: getWithdrawalStatus(3000),
+      claimedDate: getWithdrawalDate(3000),
+      isRejected: isWithdrawalRejected(3000),
+      isUnlimited: true
     }
   ];
 
@@ -200,6 +255,9 @@ function WithdrawPage({ onNavigate }) {
                 const Icon = option.icon;
                 const isDisabled = !option.canWithdraw || isSubmitting;
                 const isProcessing = isSubmitting && withdrawAmount === option.amount;
+                const isClaimed = option.status === "APPROVED";
+                const isPending = option.status === "PENDING";
+                const isRejected = option.status === "REJECTED";
                 
                 return (
                   <div key={index} className={`p-4 rounded-xl border-2 transition-all duration-200 ${
@@ -220,11 +278,36 @@ function WithdrawPage({ onNavigate }) {
                                 Available
                               </span>
                             )}
+                            {isClaimed && (
+                              <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full">
+                                Claimed
+                              </span>
+                            )}
+                            {isPending && (
+                              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full">
+                                Pending
+                              </span>
+                            )}
+                            {isRejected && (
+                              <span className="text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full">
+                                Rejected
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">{option.description}</p>
-                          {!option.canWithdraw && (
+                          {!option.canWithdraw && !isClaimed && !isPending && (
                             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                               {option.requirement}
+                            </p>
+                          )}
+                          {isClaimed && option.claimedDate && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                              Claimed on {option.claimedDate}
+                            </p>
+                          )}
+                          {isRejected && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              Your request was rejected. You can try again.
                             </p>
                           )}
                         </div>
@@ -232,13 +315,17 @@ function WithdrawPage({ onNavigate }) {
                       
                       <Button 
                         onClick={() => handleWithdraw(option.amount)}
-                        disabled={isDisabled}
+                        disabled={isDisabled || isClaimed || isPending}
                         className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                           isProcessing
                             ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : option.canWithdraw
-                              ? 'bg-green-600 hover:bg-green-700 text-white'
-                              : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                            : isClaimed
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : isPending
+                                ? 'bg-yellow-400 text-yellow-800 cursor-not-allowed'
+                                : option.canWithdraw
+                                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                         }`}
                       >
                         {isProcessing ? (
@@ -246,6 +333,10 @@ function WithdrawPage({ onNavigate }) {
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             <span>Processing...</span>
                           </div>
+                        ) : isClaimed ? (
+                          'Already Claimed'
+                        ) : isPending ? (
+                          'Pending'
                         ) : (
                           option.canWithdraw ? 'Withdraw' : 'Locked'
                         )}

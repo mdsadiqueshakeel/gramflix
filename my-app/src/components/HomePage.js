@@ -12,6 +12,7 @@ import { DarkModeToggle } from "./DarkModeToggle";
 import ProtectedRoute from "./ProtectedRoute";
 import PremiumUpgradePopup from "./PremiumUpgradePopup";
 import PremiumContent from "./PremiumContent";
+import NewsFeed from "./NewsFeed";
 import { fetchUserProfile, isPremiumUser, getPremiumStatus } from "@/lib/api";
 
 const categories = [
@@ -229,72 +230,8 @@ function HomePage({ onNavigate, isLoggedIn, isDarkMode, onToggleDarkMode }) {
           </div>
         </div>
 
-        {/* Article Cards */}
-        <div className="space-y-4">
-          {filteredArticles.map((article, index) => (
-            <Card
-              key={article.id}
-              className={`
-              overflow-hidden border-border hover:border-newzia-primary/30 transition-all duration-300 
-              hover:shadow-strong group cursor-pointer bg-card/50 backdrop-blur-sm
-              ${index === 0 ? "md:col-span-2" : ""}
-            `}
-            >
-              <div className="flex flex-col md:flex-row">
-                {/* Image */}
-                <div className="w-full md:w-1/3 h-48 md:h-auto relative overflow-hidden">
-                  <ImageWithFallback
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 p-4 md:p-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                          getPremiumStatus(userProfile) === "PREMIUM"
-                            ? "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30"
-                            : "text-newzia-primary bg-newzia-blue-50 dark:bg-newzia-blue-900/30"
-                        }`}
-                      >
-                        {article.category}
-                      </Badge>
-                      <div className="flex items-center text-xs text-muted-foreground space-x-2">
-                        <Clock className="h-3 w-3" />
-                        <span>{article.readTime}</span>
-                      </div>
-                    </div>
-
-                    <h3 className={`text-lg md:text-xl font-bold leading-tight transition-colors duration-200 line-clamp-2 ${
-                      getPremiumStatus(userProfile) === "PREMIUM"
-                        ? "text-foreground group-hover:text-yellow-600"
-                        : "text-foreground group-hover:text-newzia-primary"
-                    }`}>
-                      {article.title}
-                    </h3>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div className="flex items-center text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3">
-                        <span className="font-medium">{article.author}</span>
-                        <span>•</span>
-                        <span>{article.source}</span>
-                        <span>•</span>
-                        <span>{article.publishedAt}</span>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {/* News Feed */}
+        <NewsFeed isPremiumUser={getPremiumStatus(userProfile) === "PREMIUM"} />
       </div>
       
       {/* Premium Upgrade Popup */}
