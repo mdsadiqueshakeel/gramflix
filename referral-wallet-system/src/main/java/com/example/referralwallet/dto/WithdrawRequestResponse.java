@@ -14,4 +14,5 @@ public class WithdrawRequestResponse {
     private double amount;
     private String status;
     private Date createdAt;
+    private Date updatedAt;
 }

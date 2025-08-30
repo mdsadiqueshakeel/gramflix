@@ -25,10 +25,12 @@ public class NewsController {
             @RequestParam(required = false) String category) {
         log.info("Fetching news: page={}, limit={}, category={}", page, limit, category);
         try {
-            NewsPageResponse response = newsService.getNewsArticles(
-                    page, limit,
-                    (category != null && !category.isEmpty() && !"all".equalsIgnoreCase(category)) ? category : null,
-                    null);
+            NewsPageResponse response;
+            if (category != null && !category.isEmpty() && !"all".equalsIgnoreCase(category)) {
+                response = newsService.getNewsArticles(page, limit, category, null);
+            } else {
+                response = newsService.getRandomNewsArticles(page, limit);
+            }
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error fetching news", e);

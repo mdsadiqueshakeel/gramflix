@@ -14,5 +14,6 @@ public class WithdrawRequest {
     private double amount;
     private String status = "PENDING"; // PENDING | APPROVED | REJECTED
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 }

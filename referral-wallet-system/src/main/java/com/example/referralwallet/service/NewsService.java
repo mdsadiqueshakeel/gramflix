@@ -96,7 +96,7 @@ public class NewsService {
      */
     private void cleanupOldNews() {
         try {
-            LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
+            LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(1);
 
             // Find old articles
             List<NewsArticle> oldArticles = newsArticleRepository.findByPublishedAtBefore(twoDaysAgo);

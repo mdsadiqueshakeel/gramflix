@@ -219,7 +219,8 @@ public class UserService {
                 req.getUserId(),
                 req.getAmount(),
                 req.getStatus(),
-                Date.from(req.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant())))
+                Date.from(req.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()),
+                req.getUpdatedAt() != null ? Date.from(req.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()) : null))
             .collect(Collectors.toList());
     }
 
