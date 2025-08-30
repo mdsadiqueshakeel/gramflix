@@ -26,27 +26,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
         System.out.println("➡️ [DEBUG] Incoming request path: " + path);
 
         // ✅ Allow only login, registration, Swagger, and H2 console to bypass JWT
         if (path.equals("/api/auth/login") ||
-            path.equals("/api/auth/init-register") ||
-            path.equals("/api/auth/complete-register") ||
-            path.equals("/api/otp/verify") ||
-            path.startsWith("/swagger-ui") ||
-            path.startsWith("/v3/api-docs") ||
-            path.startsWith("/h2") ||
-            path.startsWith("/api/admin/premium/approve") ||
-            path.startsWith("/api/admin/premium/reject") ||
-            path.startsWith("/api/admin/withdraw/approve") ||
-            path.startsWith("/api/admin/withdraw/reject") ||
-            path.startsWith("/api/password-reset")) {
+                path.equals("/api/auth/init-register") ||
+                path.equals("/api/auth/complete-register") ||
+                path.equals("/api/otp/verify") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/h2") ||
+                path.startsWith("/api/admin/premium/approve") ||
+                path.startsWith("/api/admin/premium/reject") ||
+                path.startsWith("/api/admin/withdraw/approve") ||
+                path.startsWith("/api/admin/withdraw/reject") ||
+                path.startsWith("/api/password-reset") ||
+                path.startsWith("/api/news")) { // Allow public access to news endpoints
 
-            System.out.println("✅ [DEBUG] Public endpoint, skipping JWT check for: " + path);
+            if (path.startsWith("/api/news")) {
+                System.out.println("📰 [DEBUG] News endpoint, skipping JWT check for: " + path);
+            } else {
+                System.out.println("✅ [DEBUG] Public endpoint, skipping JWT check for: " + path);
+            }
             filterChain.doFilter(request, response);
             return;
         }
@@ -71,8 +75,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails = customUserDetailsService.loadUserById(userId);
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                        null, userDetails.getAuthorities());
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 System.out.println("🔓 [DEBUG] Authentication set in SecurityContext");

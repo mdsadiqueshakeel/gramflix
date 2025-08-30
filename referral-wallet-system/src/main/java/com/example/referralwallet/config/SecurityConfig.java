@@ -29,61 +29,68 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private static final Logger logger = Logger.getLogger(SecurityConfig.class.getName());
+        private static final Logger logger = Logger.getLogger(SecurityConfig.class.getName());
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsConfig corsConfig;
+        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final CorsConfig corsConfig;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin/premium/approve/", "/api/admin/withdraw/approve/",
-                                "/api/admin/premium/reject/", "/api/admin/withdraw/reject/")
-                        .permitAll() // Permit admin approval/rejection without authentication
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/login", // Allow login
-                                "/api/auth/init-register", // Allow registration
-                                "/api/otp/verify", // Allow OTP verification
-                                "/api/auth/complete-register",
-                                "/swagger-ui/", // Swagger
-                                "/v3/api-docs/",
-                                "/h2/", // H2 Console (if needed)
-                                "/error", // Permit error page
-                                "/api/password-reset/**" // Allow password reset
-                        ).permitAll()
-                        .anyRequest().authenticated() // EVERYTHING else needs JWT
-                )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            logger.warning("Unauthorized access attempt to " + request.getRequestURI() + ": "
-                                    + authException.getMessage());
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            ObjectMapper mapper = new ObjectMapper();
-                            mapper.writeValue(response.getOutputStream(),
-                                    new ApiResponse(false, "Unauthorized: Invalid or expired token", null));
-                        }))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+                                .csrf(csrf -> csrf.disable())
+                                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/admin/premium/approve/**",
+                                                                "/api/admin/withdraw/approve/**",
+                                                                "/api/admin/premium/reject/**",
+                                                                "/api/admin/withdraw/reject/**")
+                                                .permitAll() // Permit admin approval/rejection without authentication
+                                                .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                                                .requestMatchers(
+                                                                "/api/auth/login", // Allow login
+                                                                "/api/auth/init-register", // Allow registration
+                                                                "/api/otp/verify", // Allow OTP verification
+                                                                "/api/auth/complete-register",
+                                                                "/api/news/**", // Allow public access to news endpoints
+                                                                "/swagger-ui/", // Swagger
+                                                                "/v3/api-docs/",
+                                                                "/h2/", // H2 Console (if needed)
+                                                                "/error", // Permit error page
+                                                                "/api/password-reset/**" // Allow password reset
+                                                ).permitAll()
+                                                .anyRequest().authenticated() // EVERYTHING else needs JWT
+                                )
+                                .exceptionHandling(exception -> exception
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        logger.warning("Unauthorized access attempt to "
+                                                                        + request.getRequestURI() + ": "
+                                                                        + authException.getMessage());
+                                                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                                                        ObjectMapper mapper = new ObjectMapper();
+                                                        mapper.writeValue(response.getOutputStream(),
+                                                                        new ApiResponse(false,
+                                                                                        "Unauthorized: Invalid or expired token",
+                                                                                        null));
+                                                }))
+                                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    // CORS configuration is handled by CorsConfig.java
-    // This ensures consistent CORS settings across the application
+        // CORS configuration is handled by CorsConfig.java
+        // This ensures consistent CORS settings across the application
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+                return authConfig.getAuthenticationManager();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }
