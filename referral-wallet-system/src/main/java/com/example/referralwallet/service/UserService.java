@@ -94,11 +94,20 @@ public class UserService {
         // Do not update any withdrawal flags yet.
         // The hasWithdrawn100 and hasWithdrawn900 flags are updated only upon successful approval.
 
-        String withdrawApproveLink = "http://localhost:8080/api/admin/withdraw/approve/" + req.getId();
-        String withdrawRejectLink = "http://localhost:8080/api/admin/withdraw/reject/" + req.getId();
+        String withdrawApproveLink = "http://localhost:3000/admin-action?type=withdraw&action=approve&id=" + req.getId();
+         String withdrawRejectLink = "http://localhost:3000/admin-action?type=withdraw&action=reject&id=" + req.getId();
         String withdrawEmailBody = "User " + user.getEmail() + " requested withdraw of " + amount + ".<br/><br/>" +
-                "<a href=\"" + withdrawApproveLink + "\" style=\"background-color: #4CAF50; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold;\">Accept</a> " +
-                "<a href=\"" + withdrawRejectLink + "\" style=\"background-color: #f44336; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold; margin-left: 15px;\">Reject</a>";
+                "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
+                "  <tr>" +
+                "    <td style=\"border-radius: 5px; background: #0056b3; text-align: center;\">" +
+                "      <a href=\"" + withdrawApproveLink + "\" style=\"background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 12px 25px; display: inline-block; border-radius: 5px; font-weight: bold;\">Accept</a>" +
+                "    </td>" +
+                "    <td style=\"width: 10px;\"></td>" + // Spacer
+                "    <td style=\"border-radius: 5px; background: #dc3545; text-align: center;\">" +
+                "      <a href=\"" + withdrawRejectLink + "\" style=\"background-color: #dc3545; color: #ffffff; text-decoration: none; padding: 12px 25px; display: inline-block; border-radius: 5px; font-weight: bold;\">Reject</a>" +
+                "    </td>" +
+                "  </tr>" +
+                "</table>";
         emailService.sendSimple("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
@@ -124,7 +133,13 @@ public class UserService {
 
         String resetLink = "http://localhost:3000/reset-password?token=" + token;
         String emailBody = "To reset your password, click the button below:<br/><br/>" +
-                "<a href=\"" + resetLink + "\" style=\"background-color: #4CAF50; color: white; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 16px; font-weight: bold;\">Reset Password</a><br/><br/>" +
+                "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
+                "  <tr>" +
+                "    <td style=\"border-radius: 5px; background: #0056b3; text-align: center;\">" +
+                "      <a href=\"" + resetLink + "\" style=\"background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 12px 25px; display: inline-block; border-radius: 5px; font-weight: bold;\">Reset Password</a>" +
+                "    </td>" +
+                "  </tr>" +
+                "</table><br/><br/>" +
                 "This link will expire in 5 minutes.";
         emailService.sendSimple(email, "Password Reset Request", emailBody);
         System.out.println("📧 [DEBUG] Password reset link sent to " + email);
@@ -169,11 +184,20 @@ public class UserService {
         user.setPremiumRequestStatus("PENDING");
         userRepository.save(user);
 
-        String premiumApproveLink = "http://localhost:8080/api/admin/premium/approve/" + user.getId();
-        String premiumRejectLink = "http://localhost:8080/api/admin/premium/reject/" + user.getId();
+        String premiumApproveLink = "http://localhost:3000/admin-action?type=premium&action=approve&id=" + user.getId();
+        String premiumRejectLink = "http://localhost:3000/admin-action?type=premium&action=reject&id=" + user.getId();
         String premiumEmailBody = "User " + user.getEmail() + " with mobile " + mobileNumber + " requested premium.<br/><br/>" +
-                "<a href=\"" + premiumApproveLink + "\" style=\"background-color: #FF0000; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-size: 16px; font-weight: bold;\">Accept</a> " +
-                "<a href=\"" + premiumRejectLink + "\" style=\"background-color: #FF0000; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-size: 16px; font-weight: bold; margin-left: 10px;\">Reject</a>";
+                "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
+                "  <tr>" +
+                "    <td style=\"border-radius: 5px; background: #0056b3; text-align: center;\">" +
+                "      <a href=\"" + premiumApproveLink + "\" style=\"background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 12px 25px; display: inline-block; border-radius: 5px; font-weight: bold;\">Accept</a>" +
+                "    </td>" +
+                "    <td style=\"width: 10px;\"></td>" + // Spacer
+                "    <td style=\"border-radius: 5px; background: #dc3545; text-align: center;\">" +
+                "      <a href=\"" + premiumRejectLink + "\" style=\"background-color: #dc3545; color: #ffffff; text-decoration: none; padding: 12px 25px; display: inline-block; border-radius: 5px; font-weight: bold;\">Reject</a>" +
+                "    </td>" +
+                "  </tr>" +
+                "</table>";
         emailService.sendSimple("projecttesting897@gmail.com", "Premium Upgrade Request", premiumEmailBody);
         System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
     }

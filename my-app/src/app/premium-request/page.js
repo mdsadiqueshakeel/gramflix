@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const PremiumRequestPage = () => {
@@ -35,83 +36,68 @@ const PremiumRequestPage = () => {
     }
   };
 
-  const getButtonStyle = (btnType) => ({
-    backgroundColor: btnType === 'approve' ? '#4CAF50' : '#f44336',
-    color: 'white',
-    padding: '12px 25px',
-    borderRadius: '5px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    marginRight: btnType === 'approve' ? '10px' : '0px',
-    opacity: isProcessing ? 0.6 : 1,
-    pointerEvents: isProcessing || status ? 'none' : 'auto',
-    cursor: isProcessing || status ? 'not-allowed' : 'pointer',
-    border: 'none',
-  });
+  const getButtonClasses = (btnType) => {
+    const baseClasses = 'py-2 px-5 rounded-md text-base font-bold transition-all duration-200 ease-in-out';
+    const colorClasses = btnType === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600';
+    const disabledClasses = isProcessing || status ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer';
+    const marginClass = btnType === 'approve' ? 'mr-4' : '';
+    return `${baseClasses} ${colorClasses} ${disabledClasses} ${marginClass}`;
+  };
 
   return (
-    <div
-      style={{
-        fontFamily: 'Arial, sans-serif',
-        backgroundColor: '#f4f4f4',
-        padding: '20px',
-        minHeight: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '600px',
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          padding: '30px',
-          textAlign: 'center',
-        }}
-      >
-        <h2 style={{ color: '#333', marginBottom: '20px' }}>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Premium Request Notification
         </h2>
-        <p style={{ color: '#555', fontSize: '16px', marginBottom: '30px' }}>
-          User <strong>{userEmail}</strong> with mobile <strong>{userMobile}</strong> requested premium.
+        <p className="text-gray-600 text-lg mb-8">
+          User <strong className="text-gray-800">{userEmail}</strong> with mobile <strong className="text-gray-800">{userMobile}</strong> requested premium.
         </p>
 
         {/* Buttons */}
         {!status && (
-          <div>
+          <div className="flex justify-center space-x-4">
             <button
               onClick={() => handleActionClick('approve')}
-              style={getButtonStyle('approve')}
+              className={getButtonClasses('approve')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Approve'}
+              {isProcessing ? (
+                <svg className="animate-spin h-5 w-5 text-white inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : ''}Approve
             </button>
             <button
               onClick={() => handleActionClick('reject')}
-              style={getButtonStyle('reject')}
+              className={getButtonClasses('reject')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Reject'}
+              {isProcessing ? (
+                <svg className="animate-spin h-5 w-5 text-white inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : ''}Reject
             </button>
           </div>
         )}
 
         {/* Confirmation messages */}
         {status === 'approved' && (
-          <p style={{ marginTop: '20px', color: '#4CAF50', fontSize: '18px', fontWeight: 'bold' }}>
-            ✅ Request Approved Successfully!
+          <p className="mt-6 text-green-600 text-xl font-semibold flex items-center justify-center">
+            <span className="mr-2">✅</span> Request Approved Successfully!
           </p>
         )}
         {status === 'rejected' && (
-          <p style={{ marginTop: '20px', color: '#f44336', fontSize: '18px', fontWeight: 'bold' }}>
-            ❌ Request Rejected Successfully!
+          <p className="mt-6 text-red-600 text-xl font-semibold flex items-center justify-center">
+            <span className="mr-2">❌</span> Request Rejected Successfully!
           </p>
         )}
         {status === 'alreadyProcessed' && (
-          <p style={{ marginTop: '20px', color: '#999', fontSize: '16px' }}>
-            ⚠ This request has already been processed.
+          <p className="mt-6 text-gray-500 text-lg flex items-center justify-center">
+            <span className="mr-2">⚠</span> This request has already been processed.
           </p>
         )}
       </div>
