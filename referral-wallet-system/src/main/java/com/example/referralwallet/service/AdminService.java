@@ -37,7 +37,7 @@ public class AdminService {
         user.setPremiumRequestStatus("REJECTED");
         userRepository.save(user);
 
-        emailService.sendSimple(user.getEmail(), "Premium Rejected", "Premium request rejected.");
+        emailService.sendHtml(user.getEmail(), "Premium Rejected", "Premium request rejected.");
         System.out.println("✉️ [DEBUG] Premium rejection email sent to " + user.getEmail());
     }
 
@@ -53,8 +53,8 @@ public class AdminService {
             userWallet.setWalletBalance(userWallet.getWalletBalance() - req.getAmount());
             userWallet.setTotalWithdrawal(userWallet.getTotalWithdrawal() + req.getAmount());
             userWallet.getWalletHistory().add(
-                    new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(), "Withdraw approved", new Date())
-            );
+                    new WalletTransaction(WalletTransaction.TransactionType.WITHDRAW.name(), -req.getAmount(),
+                            "Withdraw approved", new Date()));
             walletRepository.save(userWallet);
 
             System.out.println("✅ [DEBUG] Withdraw approved for userId: " + req.getUserId() +
@@ -63,7 +63,8 @@ public class AdminService {
         }, () -> System.out.println("⚠️ [DEBUG] Wallet not found for withdraw request userId: " + req.getUserId()));
 
         User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        emailService.sendSimple(user.getEmail(), "Withdraw Approved", "Your withdraw of " + req.getAmount() + " approved.");
+        emailService.sendHtml(user.getEmail(), "Withdraw Approved",
+                "Your withdraw of " + req.getAmount() + " approved.");
         System.out.println("✉️ [DEBUG] Withdraw approval email sent to " + user.getEmail());
     }
 
@@ -76,7 +77,7 @@ public class AdminService {
         withdrawRepo.save(req);
 
         User user = userRepository.findById(req.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        emailService.sendSimple(user.getEmail(), "Withdraw Rejected", "Your withdraw request was rejected.");
+        emailService.sendHtml(user.getEmail(), "Withdraw Rejected", "Your withdraw request was rejected.");
         System.out.println("✉️ [DEBUG] Withdraw rejection email sent to " + user.getEmail());
     }
 }

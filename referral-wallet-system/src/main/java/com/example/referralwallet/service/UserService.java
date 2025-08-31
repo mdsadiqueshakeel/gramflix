@@ -108,7 +108,7 @@ public class UserService {
                 "    </td>" +
                 "  </tr>" +
                 "</table>";
-        emailService.sendSimple("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
+      emailService.sendHtml("projecttesting897@gmail.com", "Withdraw Request", withdrawEmailBody);
         System.out.println("✅ [DEBUG] Withdraw request created for " + user.getEmail());
     }
 
@@ -141,7 +141,7 @@ public class UserService {
                 "  </tr>" +
                 "</table><br/><br/>" +
                 "This link will expire in 5 minutes.";
-        emailService.sendSimple(email, "Password Reset Request", emailBody);
+       emailService.sendHtml(email, "Password Reset Request", emailBody);
         System.out.println("📧 [DEBUG] Password reset link sent to " + email);
     }
 
@@ -198,7 +198,7 @@ public class UserService {
                 "    </td>" +
                 "  </tr>" +
                 "</table>";
-        emailService.sendSimple("projecttesting897@gmail.com", "Premium Upgrade Request", premiumEmailBody);
+emailService.sendHtml("projecttesting897@gmail.com", "Premium Upgrade Request", premiumEmailBody);
         System.out.println("🔔 [DEBUG] Premium request set PENDING for " + user.getEmail());
     }
 
@@ -216,7 +216,7 @@ public class UserService {
             referralService.creditPremiumUpgradeBonus(parentUser.getReferralId(), user.getId());
         }
 
-        emailService.sendSimple(user.getEmail(), "Premium Upgrade Approved",
+        emailService.sendHtml(user.getEmail(), "Premium Upgrade Approved",
                 "Your premium upgrade request has been approved.");
         System.out.println("✅ [DEBUG] Premium upgrade approved for " + user.getEmail());
     }
@@ -227,7 +227,7 @@ public class UserService {
         user.setPremiumRequestStatus("REJECTED");
         userRepository.save(user);
 
-        emailService.sendSimple(user.getEmail(), "Premium Upgrade Rejected",
+      emailService.sendHtml(user.getEmail(), "Premium Upgrade Rejected",
                 "Your premium upgrade request has been rejected.");
         System.out.println("❌ [DEBUG] Premium upgrade rejected for " + user.getEmail());
     }
@@ -294,7 +294,7 @@ public class UserService {
         req.setStatus("REJECTED");
         withdrawRequestRepository.save(req);
 
-        emailService.sendSimple(user.getEmail(), "Withdraw Request Rejected",
+    emailService.sendHtml(user.getEmail(), "Withdraw Request Rejected",
                 "Your withdraw request for " + req.getAmount() + " has been rejected.");
         System.out.println("❌ [DEBUG] Withdraw rejected for " + user.getEmail() + ", amount=" + req.getAmount());
     }

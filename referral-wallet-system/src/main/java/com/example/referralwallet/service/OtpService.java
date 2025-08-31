@@ -40,7 +40,8 @@ public class OtpService {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] bytes = md.digest(value.getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder(bytes.length * 2);
-            for (byte b : bytes) sb.append(String.format("%02X", b));
+            for (byte b : bytes)
+                sb.append(String.format("%02X", b));
             return sb.toString();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -51,17 +52,18 @@ public class OtpService {
     public OtpDtos.OtpSendResponse sendOtp(OtpDtos.OtpSendRequest req) {
         String to = req.getTo();
         String channel = (req.getChannel() == null || req.getChannel().isBlank())
-                ? defaultChannel : req.getChannel().toLowerCase();
-
+                ? defaultChannel
+                : req.getChannel().toLowerCase();
 
         // No need for phone number validation here, MSG91 handles it internally
         // if (("whatsapp".equals(channel) || "sms".equals(channel))) {
-        //     if (!to.startsWith("+")) {
-        //         to = "+" + to;
-        //     }
-        //     if (!isValidPhoneNumber(to)) {
-        //         throw new IllegalArgumentException("Invalid phone number for " + channel + ": " + req.getTo());
-        //     }
+        // if (!to.startsWith("+")) {
+        // to = "+" + to;
+        // }
+        // if (!isValidPhoneNumber(to)) {
+        // throw new IllegalArgumentException("Invalid phone number for " + channel + ":
+        // " + req.getTo());
+        // }
         // }
 
         String code = tokenGenerator.numericOtp(6);
@@ -83,7 +85,7 @@ public class OtpService {
                 msg91Service.sendOtp(to, code, channel);
                 break;
             case "email":
-                emailService.sendSimple(req.getTo(), "Your OTP Code", msg);
+                emailService.sendHtml(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
                 log.warn("Unknown channel '{}', falling back to SMS", channel);
@@ -130,6 +132,5 @@ public class OtpService {
             return resp;
         }
     }
-
 
 }

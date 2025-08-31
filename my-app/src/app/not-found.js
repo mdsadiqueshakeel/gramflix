@@ -51,7 +51,7 @@ export default function NotFound() {
             </p>
             <Button
               variant="ghost"
-              onClick={() => router.push("/coming-soon")}
+              onClick={() => router.push("/")}
               className="text-newzia-primary hover:text-newzia-primary-hover hover:bg-accent font-medium"
             >
               <Search size={16} className="mr-2" />

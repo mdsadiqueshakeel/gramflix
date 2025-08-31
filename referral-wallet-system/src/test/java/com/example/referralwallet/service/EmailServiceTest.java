@@ -1,37 +1,51 @@
 package com.example.referralwallet.service;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
+import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+
+import com.example.referralwallet.service.EmailService;
+
+import static org.mockito.Mockito.*;
 
 class EmailServiceTest {
-
-    @InjectMocks
-    private EmailService emailService;
 
     @Mock
     private JavaMailSender javaMailSender;
 
+    @InjectMocks
+    private EmailService emailService;
+
+    private MimeMessage realMimeMessage;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        // ✅ Create a real MimeMessage using a real sender
+        JavaMailSenderImpl sender = new JavaMailSenderImpl();
+        realMimeMessage = sender.createMimeMessage();
+
+        // ✅ Stub the mock to return the real object
+        when(javaMailSender.createMimeMessage()).thenReturn(realMimeMessage);
     }
 
     @Test
     void testSendSimpleEmail() {
-        String to = "projecttesting897@gmail.com";
-        String subject = "Test Subject";
-        String body = "Test Body";
+        // Act
+        emailService.sendHtml("test@example.com", "Test Subject", "<b>Hello</b> World!");
 
-        emailService.sendSimple(to, subject, body);
+        // ✅ Verify that send() was called ONCE with the real message
+        verify(javaMailSender, times(1)).send(realMimeMessage);
 
-        verify(javaMailSender, times(1)).send(any(SimpleMailMessage.class));
+        // ❌ REMOVE verifyNoMoreInteractions()
+        // Because EmailService ALSO calls createMimeMessage(), which is valid
     }
 }
+
+
