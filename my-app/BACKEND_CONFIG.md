@@ -10,7 +10,7 @@ Create a `.env.local` file in the `my-app` directory:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 ```
 
 ### Option 2: Modify Configuration File
@@ -18,7 +18,7 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 Edit `src/config/backend.js` and change the default URL:
 
 ```javascript
-BASE_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+BASE_URL: process.env.NEXT_PUBLIC_NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
 ```
 
 ## Backend Endpoints
@@ -57,5 +57,5 @@ If you see "Cannot connect to news service":
 For production, set the environment variable to your production backend URL:
 
 ```bash
-NEXT_PUBLIC_BACKEND_URL=https://your-backend-domain.com
+NEXT_PUBLIC_NEXT_PUBLIC_BACKEND_URL=https://your-backend-domain.com
 ```

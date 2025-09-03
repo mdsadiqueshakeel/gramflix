@@ -8,6 +8,9 @@ import { Card } from "./ui/card";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
 function LoginPage({ onNavigate, onLogin }) {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -42,7 +45,7 @@ function LoginPage({ onNavigate, onLogin }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/auth/login`, {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

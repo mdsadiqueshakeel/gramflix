@@ -8,6 +8,8 @@ import { Card } from "./ui/card";
 import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -26,7 +28,7 @@ function ForgotPasswordPage() {
     setError("");
 
     try {
-      const res = await fetch(`http://localhost:8080/api/password-reset/request`, {
+      const res = await fetch(`${API_URL}/api/password-reset/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

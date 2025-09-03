@@ -9,6 +9,9 @@ import { Eye, EyeOff, CheckCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
 // interface SignUpPageProps {
 //   onNavigate: (page: string) => void
 // }
@@ -81,7 +84,7 @@ function SignUpPage({ onNavigate }) {
         password: formData.password,
         referral: formData.referCode,
       };
-      const res = await fetch(`http://localhost:8080/api/auth/init-register`, {
+      const res = await fetch(`${API_URL}/api/auth/init-register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -109,7 +112,7 @@ function SignUpPage({ onNavigate }) {
     try {
       setOtpLoading(true);
       // Step 2: verify OTP
-      const verifyRes = await fetch(`http://localhost:8080/api/otp/verify`, {
+      const verifyRes = await fetch(`${API_URL}/api/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: Number(formData.mobile), code: otp }),
@@ -128,7 +131,7 @@ function SignUpPage({ onNavigate }) {
         referral: formData.referCode,
       };
       const completeRes = await fetch(
-        `http://localhost:8080/api/auth/complete-register`,
+        `${API_URL}/api/auth/complete-register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

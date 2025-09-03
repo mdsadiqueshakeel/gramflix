@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
 export async function POST(request) {
   try {
     const body = await request.json();
-    
-    const response = await fetch('http://localhost:8080/api/password-reset/request', {
+
+    const response = await fetch(`${API_URL}/api/password-reset/request`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

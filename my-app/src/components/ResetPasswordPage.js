@@ -8,6 +8,9 @@ import { Card } from "./ui/card";
 import { ArrowLeft, Eye, EyeOff, Lock, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
 function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,9 +78,9 @@ function ResetPasswordPage() {
         newPassword: formData.password,
       };
       console.log("Sending request with body:", requestBody);
-      console.log("Backend URL:", "http://localhost:8080/api/password-reset/reset");
-      
-      const res = await fetch(`http://localhost:8080/api/password-reset/reset`, {
+      console.log("Backend URL:", `${API_URL}/api/password-reset/reset`);
+
+      const res = await fetch(`${API_URL}/api/password-reset/reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
