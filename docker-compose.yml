@@ -1,0 +1,23 @@
+
+services:
+  backend:
+    build: ./referral-wallet-system
+    image: local-backend:latest
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    
+  
+  frontend:
+    build: ./my-app
+    image: local-frontend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+    depends_on:
+      - backend
