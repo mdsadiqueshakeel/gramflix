@@ -6,6 +6,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.Optional;
 
 public interface OtpRepository extends MongoRepository<Otp, String> {
-    Optional<Otp> findByTo(long to);
-    void deleteByTo(long to);
+    Optional<Otp> findByTo(String to);
+    void deleteByTo(String to);
 }

@@ -8,6 +8,7 @@ public class OtpDtos {
     public static class OtpSendRequest {
         private String to;
         private String channel; // "whatsapp" or "email"
+        private String customOtp; // optional, for testing with a specific OTP
     }
 
     @Data
