@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 // import org.springframework.data.mongodb.core.aggregation.VariableOperators.Map;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +32,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     private final UserRepository userRepository;
     private final WithdrawRequestRepository withdrawRequestRepository;
@@ -94,8 +98,8 @@ public class UserService {
         // Do not update any withdrawal flags yet.
         // The hasWithdrawn100 and hasWithdrawn900 flags are updated only upon successful approval.
 
-        String withdrawApproveLink = "http://localhost:3000/admin-action?type=withdraw&action=approve&id=" + req.getId();
-         String withdrawRejectLink = "http://localhost:3000/admin-action?type=withdraw&action=reject&id=" + req.getId();
+        String withdrawApproveLink = frontendUrl + "/admin-action?type=withdraw&action=approve&id=" + req.getId();
+         String withdrawRejectLink = frontendUrl + "/admin-action?type=withdraw&action=reject&id=" + req.getId();
         String withdrawEmailBody = "User " + user.getEmail() + " requested withdraw of " + amount + ".<br/><br/>" +
                 "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
                 "  <tr>" +
@@ -131,7 +135,7 @@ public class UserService {
         resetToken.setUsed(false);
         passwordResetTokenRepository.save(resetToken);
 
-        String resetLink = "http://localhost:3000/reset-password?token=" + token;
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
         String emailBody = "To reset your password, click the button below:<br/><br/>" +
                 "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
                 "  <tr>" +
@@ -184,8 +188,8 @@ public class UserService {
         user.setPremiumRequestStatus("PENDING");
         userRepository.save(user);
 
-        String premiumApproveLink = "http://localhost:3000/admin-action?type=premium&action=approve&id=" + user.getId();
-        String premiumRejectLink = "http://localhost:3000/admin-action?type=premium&action=reject&id=" + user.getId();
+        String premiumApproveLink = frontendUrl + "/admin-action?type=premium&action=approve&id=" + user.getId();
+        String premiumRejectLink = frontendUrl + "/admin-action?type=premium&action=reject&id=" + user.getId();
         String premiumEmailBody = "User " + user.getEmail() + " with mobile " + mobileNumber + " requested premium.<br/><br/>" +
                 "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin: auto;\">" +
                 "  <tr>" +
