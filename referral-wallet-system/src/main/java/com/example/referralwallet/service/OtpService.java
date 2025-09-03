@@ -50,25 +50,30 @@ public class OtpService {
 
     // Send OTP via WhatsApp or Email
     public OtpDtos.OtpSendResponse sendOtp(OtpDtos.OtpSendRequest req) {
+        String customOtp = req.getCustomOtp();
         String to = req.getTo();
         String channel = (req.getChannel() == null || req.getChannel().isBlank())
                 ? defaultChannel
                 : req.getChannel().toLowerCase();
 
-        // No need for phone number validation here, MSG91 handles it internally
-        // if (("whatsapp".equals(channel) || "sms".equals(channel))) {
-        // if (!to.startsWith("+")) {
-        // to = "+" + to;
-        // }
-        // if (!isValidPhoneNumber(to)) {
-        // throw new IllegalArgumentException("Invalid phone number for " + channel + ":
-        // " + req.getTo());
-        // }
-        // }
+        // Basic validation for phone number format
+        if (("whatsapp".equals(channel) || "sms".equals(channel))) {
+            // Phone number validation will be handled in MSG91Service
+            log.debug("Sending OTP to: " + to);
+        }
 
         String code = tokenGenerator.numericOtp(6);
-        Optional<Otp> existingOtp = otpRepository.findByTo(Long.parseLong(req.getTo()));
-        Otp otp = existingOtp.orElse(new Otp());
+        
+        // Delete any existing OTPs for this recipient to avoid duplicates
+        try {
+            otpRepository.deleteByTo(req.getTo());
+            log.debug("Deleted existing OTPs for: {}", req.getTo());
+        } catch (Exception e) {
+            log.warn("Error deleting existing OTPs: {}", e.getMessage());
+        }
+        
+        // Create a new OTP
+        Otp otp = new Otp();
         otp.setTo(req.getTo());
         otp.setCodeHash(hash(code));
         otp.setExpiresAt(Date.from(Instant.now().plus(5, ChronoUnit.MINUTES)));
@@ -82,14 +87,14 @@ public class OtpService {
         switch (channel) {
             case "whatsapp":
             case "sms":
-                msg91Service.sendOtp(to, code, channel);
+                msg91Service.sendOtp(to, code, channel, devEcho ? code : customOtp);
                 break;
             case "email":
                 emailService.sendHtml(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
                 log.warn("Unknown channel '{}', falling back to SMS", channel);
-                msg91Service.sendOtp(to, code, channel);
+                msg91Service.sendOtp(to, code, channel, devEcho ? code : customOtp);
         }
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
@@ -102,7 +107,7 @@ public class OtpService {
     // Verify OTP
     public OtpDtos.OtpVerifyResponse verifyOtp(OtpDtos.OtpVerifyRequest req) {
         log.info("Verifying OTP for: {}, code: {}", req.getTo(), req.getCode());
-        Optional<Otp> o = otpRepository.findByTo(Long.parseLong(req.getTo()));
+        Optional<Otp> o = otpRepository.findByTo(req.getTo());
         OtpDtos.OtpVerifyResponse resp = new OtpDtos.OtpVerifyResponse();
 
         if (o.isEmpty()) {
@@ -113,14 +118,14 @@ public class OtpService {
 
         Otp otp = o.get();
         if (otp.getExpiresAt().before(new Date())) {
-            otpRepository.deleteByTo(Long.parseLong(req.getTo()));
+            otpRepository.deleteByTo(req.getTo());
             resp.setVerified(false);
             resp.setMessage("OTP expired");
             return resp;
         }
 
         if (otp.getCodeHash().equals(hash(req.getCode()))) {
-            otpRepository.deleteByTo(Long.parseLong(req.getTo()));
+            otpRepository.deleteByTo(req.getTo());
             resp.setVerified(true);
             resp.setMessage("OTP verified");
             return resp;

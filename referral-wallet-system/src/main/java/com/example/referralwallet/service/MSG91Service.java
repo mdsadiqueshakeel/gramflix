@@ -22,7 +22,7 @@ public class MSG91Service {
         this.webClient = webClientBuilder.baseUrl("https://api.msg91.com/api/v5/").build();
     }
 
-    public void sendOtp(String mobileNumber, String otp, String channel) {
+    public void sendOtp(String mobileNumber, String otp, String channel, String customOtp) {
         String selectedTemplateId;
         if ("whatsapp".equals(channel)) {
             selectedTemplateId = whatsappTemplateId;
@@ -32,8 +32,33 @@ public class MSG91Service {
             // Fallback or error handling if channel is neither whatsapp nor sms
             selectedTemplateId = smsTemplateId; // Default to SMS template if channel is unknown
         }
-        String url = "otp?template_id=" + selectedTemplateId + "&mobile=" + mobileNumber + "&authkey=" + authKey + "&VAR1=" + otp;
+        
+        // Format the mobile number correctly (ensure it has country code)
+        if (!mobileNumber.startsWith("+")) {
+            // Add India country code if not present
+            if (!mobileNumber.startsWith("91")) {
+                mobileNumber = "91" + mobileNumber;
+            }
+        } else {
+            // Remove the + if present and ensure it has country code
+            mobileNumber = mobileNumber.substring(1);
+            if (!mobileNumber.startsWith("91")) {
+                mobileNumber = "91" + mobileNumber;
+            }
+        }
+        
+        // Construct the URL with all required parameters
+        // MSG91 API requires specific parameter order and format
+        // The OTP placeholder in the template should be ##OTP## according to MSG91 docs
+        String url = "otp?authkey=" + authKey + 
+                     "&mobile=" + mobileNumber + 
+                     "&otp=" + (customOtp != null && !customOtp.isEmpty() ? customOtp : otp) + 
+                     "&template_id=" + selectedTemplateId + 
+                     "&invisible=1" + 
+                     "&otp_length=6";
 
+        System.out.println("Sending OTP to: " + mobileNumber + " with template ID: " + selectedTemplateId);
+        
         webClient.post()
                 .uri(url)
                 .retrieve()
