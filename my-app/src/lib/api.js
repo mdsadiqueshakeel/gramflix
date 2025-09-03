@@ -1,4 +1,6 @@
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export async function fetchUserProfile() {
   try {
     const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
@@ -6,7 +8,7 @@ export async function fetchUserProfile() {
       return null;
     }
 
-    const res = await fetch(`http://localhost:8080/api/auth/profile`, {
+    const res = await fetch(`${API_URL}/api/auth/profile`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -48,7 +50,7 @@ export async function fetchWalletSummary() {
       return null;
     }
 
-    const res = await fetch(`http://localhost:8080/api/auth/wallet`, {
+    const res = await fetch(`${API_URL}/api/auth/wallet`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -71,7 +73,7 @@ export async function fetchChildrenSummary() {
       return null;
     }
 
-    const res = await fetch(`http://localhost:8080/api/auth/children`, {
+    const res = await fetch(`${API_URL}/api/auth/children`, {
       headers: {
         "Authorization": `Bearer ${token}`,
       },
@@ -94,7 +96,7 @@ export async function updateUserProfile(payload) {
       throw new Error("Not authenticated");
     }
 
-    const res = await fetch(`http://localhost:8080/api/auth/profile`, {
+    const res = await fetch(`${API_URL}/api/auth/profile`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -131,7 +133,7 @@ export async function requestPremium() {
       throw new Error("Mobile number not found in profile");
     }
 
-    const url = `http://localhost:8080/api/premium-request?mobile=${encodeURIComponent(mobile)}`;
+    const url = `${API_URL}/api/premium-request?mobile=${encodeURIComponent(mobile)}`;
 
     const res = await fetch(url, {
       method: "PATCH",
@@ -205,7 +207,7 @@ export async function requestWithdraw(amount) {
       throw new Error("Authentication required");
     }
 
-    const url = `http://localhost:8080/api/withdraw/${amount}`;
+    const url = `${API_URL}/api/withdraw/${amount}`;
 
     const res = await fetch(url, {
       method: "POST",
@@ -232,7 +234,7 @@ export async function requestWithdraw(amount) {
 
 export const fetchWithdrawRequests = async () => {
   try {
-    const response = await fetch(`http://localhost:8080/api/withdraw-requests`, {
+    const response = await fetch(`${API_URL}/api/withdraw-requests`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${typeof window !== "undefined" ? localStorage.getItem("authToken") : null}`,

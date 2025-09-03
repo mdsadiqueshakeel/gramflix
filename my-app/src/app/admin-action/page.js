@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export default function AdminActionPage() {
     const [message, setMessage] = useState('Processing your request...');
     const [status, setStatus] = useState('processing'); // processing, success, error
@@ -20,7 +22,7 @@ export default function AdminActionPage() {
             return;
         }
 
-        const backendUrl = `http://localhost:8080/api/admin/${type}/${action}/${id}`;
+        const backendUrl = `${API_URL}/api/admin/${type}/${action}/${id}`;
 
         fetch(backendUrl, {
             method: 'POST',

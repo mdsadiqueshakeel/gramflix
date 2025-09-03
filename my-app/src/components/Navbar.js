@@ -7,6 +7,9 @@ import { DarkModeToggle } from "./DarkModeToggle";
 import { Bell } from "lucide-react";
 import { getPremiumStatus } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
 function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState(false);
@@ -60,7 +63,7 @@ function Navbar({ isLoggedIn, isDarkMode, onToggleDarkMode }) {
       }
       setProfileLoading(true);
       try {
-        const res = await fetch(`http://localhost:8080/api/auth/profile`, {
+        const res = await fetch(`${API_URL}/api/auth/profile`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
