@@ -1,0 +1,32 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+management:
+  endpoint:
+    health:
+      roles: []  # no auth for local
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+management:
+  endpoint:
+    health:
+      roles: admin  # secure in production

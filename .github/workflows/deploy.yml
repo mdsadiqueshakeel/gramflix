@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+    push:
+        branches: [ "master" ]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+         - name: Checkout code
+           uses: actions/checkout@v3
+         - name: Configure AWS
+           uses: aws-actions/configure-aws-credentials@v4
+           with:
+            aws-access-key-id: ${ { AKIATTI7CL4AKNJZGXRB } }
+            aws-secret-access-key: ${ { 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 } }
+            aws-region: ap-south-1
+
+         - name: Deploy via SSM
+           run: |
+             INSTANCE_ID=i-0988543b277f637f7
+
+             aws ssm send-command \
+                --targets "Key=instanceIds,Values=i-0988543b277f637f7" \
+                --document-name "AWS-RunShellScript" \
+                --comment "Deploy App" \
+                --parameters 'commands=["/app/scripts/deploy.sh"]'

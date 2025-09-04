@@ -5,12 +5,8 @@ services:
     image: local-backend:latest
     ports:
       - "8080:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
   
   frontend:
     build: ./my-app

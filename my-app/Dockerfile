@@ -26,5 +26,5 @@ COPY --from=build /app/.env.production .env
 RUN npm ci --production
 
 EXPOSE 3000
-# CMD ["npm", "start"]
-CMD ["nginx","-g","daemon off;"]
+CMD ["npm", "start"]
+# CMD ["nginx","-g","daemon off;"]
