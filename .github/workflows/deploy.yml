@@ -1,29 +1,54 @@
 name: Deploy to EC2
 
 on:
-    push:
-        branches: [ "master" ]
+  push:
+    branches: [ "master" ]
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-        steps:
-         - name: Checkout code
-           uses: actions/checkout@v3
-         - name: Configure AWS
-           uses: aws-actions/configure-aws-credentials@v4
-           with:
-            aws-access-key-id: ${ { AKIATTI7CL4AKNJZGXRB } }
-            aws-secret-access-key: ${ { 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 } }
-            aws-region: ap-south-1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-         - name: Deploy via SSM
-           run: |
-             INSTANCE_ID=i-0988543b277f637f7
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-             aws ssm send-command \
-                --targets "Key=instanceIds,Values=i-0988543b277f637f7" \
-                --document-name "AWS-RunShellScript" \
-                --comment "Deploy App" \
-                --parameters 'commands=["/app/scripts/deploy.sh"]'
+      - name: Deploy App via SSM
+        run: |
+          INSTANCE_ID=i-003663f28cf482aa0
+          SSM_USER_HOME=/home/ssm-user
+          APP_DIR=$SSM_USER_HOME/app/gramflix
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Create app folder" \
+            --parameters "commands=[\"mkdir -p $APP_DIR\"]"
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Add GitHub to known hosts" \
+            --parameters "commands=[\"ssh-keyscan github.com >> $SSM_USER_HOME/.ssh/known_hosts\"]"
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Clone or update repo" \
+            --parameters "commands=[
+              \"if [ -d '$APP_DIR/.git' ]; then cd $APP_DIR && git pull origin master; else git clone git@github.com:mdsadiqueshakeel/gramflix.git $APP_DIR; fi\"
+            ]"
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Docker refresh" \
+            --parameters "commands=[
+              \"cd $APP_DIR && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d --build\"
+            ]"

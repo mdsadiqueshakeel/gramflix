@@ -24,8 +24,9 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins(frontendUrl,
-                        "https://gramflix.com",
-                        "https://www.gramflix.com")
+                        "https://gramflix.in",
+                        "https://www.gramflix.in",
+                        "http://13.204.131.161:3000")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type", "Access-Control-Allow-Origin",
@@ -38,8 +39,9 @@ public class CorsConfig implements WebMvcConfigurer {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(frontendUrl,
-                "https://gramflix.com",
-                "https://www.gramflix.com"));
+                "https://gramflix.in",
+                "https://www.gramflix.in",
+                "http://13.204.131.161:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Access-Control-Allow-Origin",

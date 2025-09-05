@@ -25,7 +25,7 @@ public class OtpService {
 
     private final OtpRepository otpRepository;
     private final TokenGenerator tokenGenerator;
-    private final MSG91Service msg91Service;
+    // private final MSG91Service msg91Service;
     private final EmailService emailService;
 
     @Value("${otp.default-channel:whatsapp}")
@@ -85,10 +85,10 @@ public class OtpService {
         String msg = "Your OTP is " + code + ". It expires in 5 minutes.";
 
         switch (channel) {
-            case "whatsapp":
-            case "sms":
-                msg91Service.sendOtp(to, code, channel, devEcho ? code : customOtp);
-                break;
+            // case "whatsapp":
+            // case "sms":
+            //     msg91Service.sendOtp(to, code, channel, devEcho ? code : customOtp);
+            //     break;
             case "email":
                 emailService.sendHtml(req.getTo(), "Your OTP Code", msg);
                 break;
