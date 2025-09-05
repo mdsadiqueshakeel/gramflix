@@ -10,6 +10,7 @@ public class AuthDtos {
         private String mobile;
         private String password;
         private String referral;
+        private String otpCode;
 
         public String getReferral() {
             return referral;

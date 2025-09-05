@@ -1,19 +1,14 @@
 "use client";
 
+import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card } from "./ui/card";
-import { Eye, EyeOff, CheckCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-// interface SignUpPageProps {
-//   onNavigate: (page: string) => void
-// }
 
 function SignUpPage({ onNavigate }) {
   const router = useRouter();
@@ -57,11 +52,19 @@ function SignUpPage({ onNavigate }) {
     const newErrors = {};
 
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.email.trim()) newErrors.email = "Email is required";
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!formData.email.trim().toLowerCase().endsWith("@gmail.com")) {
+      newErrors.email = "Only Gmail addresses are allowed";
+    }
     if (!formData.mobile.trim()) newErrors.mobile = "Mobile number is required";
     if (!formData.referCode.trim())
       newErrors.referCode = "Referral code is required";
-    if (!formData.password) newErrors.password = "Password is required";
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters long";
+    }
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
@@ -128,6 +131,7 @@ function SignUpPage({ onNavigate }) {
         mobile: Number(formData.mobile),
         password: formData.password,
         referral: formData.referCode,
+        otpCode: otp,
       };
       const completeRes = await fetch(`${API_URL}/api/auth/complete-register`, {
         method: "POST",
@@ -220,12 +224,6 @@ function SignUpPage({ onNavigate }) {
         <div className="space-y-8">
           <div className="text-center space-y-3">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              {/* <button
-            onClick={() => router.push("/")}
-            className="p-2 -ml-2 text-muted-foreground hover:text-newzia-primary transition-colors rounded-lg hover:bg-accent"
-          >
-            <ArrowLeft size={20} />
-          </button> */}
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-newzia-primary to-newzia-primary-hover flex items-center justify-center">
                 <span className="text-white font-bold text-lg">G</span>
               </div>
@@ -280,16 +278,6 @@ function SignUpPage({ onNavigate }) {
                 onChange={(e) => {
                   const value = e.target.value.toLowerCase();
                   handleInputChange("email", value);
-
-                  // 🔥 custom Gmail-only validation
-                  if (!value.endsWith("@gmail.com")) {
-                    setErrors((prev) => ({
-                      ...prev,
-                      email: "Only Gmail addresses are allowed",
-                    }));
-                  } else {
-                    setErrors((prev) => ({ ...prev, email: "" }));
-                  }
                 }}
                 className={`h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
                   errors.email ? "border-destructive" : ""
@@ -360,20 +348,7 @@ function SignUpPage({ onNavigate }) {
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a strong password"
                   value={formData.password}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    handleInputChange("password", value);
-
-                    // 🔥 Simple password validation (>= 8 chars)
-                    if (value.length < 8) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        password: "Password must be at least 8 characters long",
-                      }));
-                    } else {
-                      setErrors((prev) => ({ ...prev, password: "" }));
-                    }
-                  }}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
                   className={`h-12 pr-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
                     errors.password ? "border-destructive" : ""
                   }`}

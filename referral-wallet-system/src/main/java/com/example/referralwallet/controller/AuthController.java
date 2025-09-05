@@ -101,6 +101,18 @@ public class AuthController {
             logger.log(Level.INFO, "📝 [DEBUG] complete-register called for mobile: {0}, email: {1}",
                     new Object[]{request.getMobile(), request.getEmail()});
 
+            // Verify OTP before completing registration
+            OtpDtos.OtpVerifyRequest otpVerifyRequest = new OtpDtos.OtpVerifyRequest();
+            otpVerifyRequest.setTo(request.getEmail());
+            otpVerifyRequest.setCode(request.getOtpCode()); // Assuming request contains otpCode
+
+            OtpDtos.OtpVerifyResponse otpVerifyResponse = otpService.verifyOtp(otpVerifyRequest);
+
+            if (!otpVerifyResponse.isVerified()) {
+                response = new ApiResponse(false, otpVerifyResponse.getMessage());
+                return ResponseEntity.badRequest().body(response);
+            }
+
             AuthDtos.RegisterResponse regResp = authService.registerAfterOtp(request.getEmail(), request);
             logger.log(Level.INFO, "✅ [DEBUG] User registered successfully, userId: {0}", regResp.getUserId());
 

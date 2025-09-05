@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { pollPremiumStatus, requestPremium } from "@/lib/api";
+import { BadgeCheck, Banknote, Crown, Shield, Star, X } from "lucide-react";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { X, Check, Star, Banknote, Shield, Crown, BadgeCheck } from "lucide-react";
-import { requestPremium, pollPremiumStatus } from "@/lib/api";
 
 const benefits = [
   {
@@ -37,7 +37,7 @@ const handleUpgrade = async () => {
   setIsLoading(true);
   try {
     // 1. Open WhatsApp immediately (so popup isn't blocked)
-    const adminPhoneNumber = "919155649575";
+    const adminPhoneNumber = "917859086070";
     const message =
       "Hi Admin 👋,\n\nI would like to upgrade to Premium.\nPlease review my request and approve it. 🙏\n\nThanks!\n— Your App User";
     const encodedMessage = encodeURIComponent(message);
