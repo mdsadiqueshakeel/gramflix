@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-
 function LoginPage({ onNavigate, onLogin }) {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -32,8 +31,7 @@ function LoginPage({ onNavigate, onLogin }) {
     const newErrors = {};
     if (!formData.emailOrMobile.trim())
       newErrors.emailOrMobile = "Email or Mobile is required";
-    if (!formData.password.trim())
-      newErrors.password = "Password is required";
+    if (!formData.password.trim()) newErrors.password = "Password is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -83,7 +81,9 @@ function LoginPage({ onNavigate, onLogin }) {
               </div>
               <h1 className="text-3xl font-bold text-foreground">GramFlix</h1>
             </div>
-            <h2 className="text-2xl font-bold text-foreground">Welcome Back!</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              Welcome Back!
+            </h2>
             <p className="text-muted-foreground">
               Sign in to continue to your account
             </p>
@@ -93,7 +93,10 @@ function LoginPage({ onNavigate, onLogin }) {
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email/Mobile */}
             <div className="space-y-2">
-              <Label htmlFor="emailOrMobile" className="text-sm font-medium text-foreground">
+              <Label
+                htmlFor="emailOrMobile"
+                className="text-sm font-medium text-foreground"
+              >
                 Email or Mobile
               </Label>
               <Input
@@ -101,19 +104,27 @@ function LoginPage({ onNavigate, onLogin }) {
                 type="text"
                 placeholder="Enter your email or mobile"
                 value={formData.emailOrMobile}
-                onChange={(e) => handleInputChange("emailOrMobile", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.toLowerCase(); // 🔥 force lowercase
+                  handleInputChange("emailOrMobile", value);
+                }}
                 className={`h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
                   errors.emailOrMobile ? "border-destructive" : ""
                 }`}
               />
               {errors.emailOrMobile && (
-                <p className="text-destructive text-sm mt-1">{errors.emailOrMobile}</p>
+                <p className="text-destructive text-sm mt-1">
+                  {errors.emailOrMobile}
+                </p>
               )}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-foreground"
+              >
                 Password
               </Label>
               <div className="relative">
@@ -122,7 +133,9 @@ function LoginPage({ onNavigate, onLogin }) {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   className={`h-12 pr-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
                     errors.password ? "border-destructive" : ""
                   }`}
@@ -136,7 +149,9 @@ function LoginPage({ onNavigate, onLogin }) {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-destructive text-sm mt-1">{errors.password}</p>
+                <p className="text-destructive text-sm mt-1">
+                  {errors.password}
+                </p>
               )}
             </div>
 

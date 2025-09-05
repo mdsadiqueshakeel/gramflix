@@ -11,7 +11,6 @@ import { ArrowLeft } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-
 // interface SignUpPageProps {
 //   onNavigate: (page: string) => void
 // }
@@ -130,14 +129,11 @@ function SignUpPage({ onNavigate }) {
         password: formData.password,
         referral: formData.referCode,
       };
-      const completeRes = await fetch(
-        `${API_URL}/api/auth/complete-register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(completeBody),
-        }
-      );
+      const completeRes = await fetch(`${API_URL}/api/auth/complete-register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(completeBody),
+      });
       if (!completeRes.ok) {
         const err = await completeRes.json().catch(() => ({}));
         throw new Error(err.message || "Failed to complete registration");
@@ -281,10 +277,20 @@ function SignUpPage({ onNavigate }) {
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
-                onChange={
-                  (e) =>
-                    handleInputChange("email", e.target.value.toLowerCase()) // 🔥 force lowercase
-                }
+                onChange={(e) => {
+                  const value = e.target.value.toLowerCase();
+                  handleInputChange("email", value);
+
+                  // 🔥 custom Gmail-only validation
+                  if (!value.endsWith("@gmail.com")) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      email: "Only Gmail addresses are allowed",
+                    }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, email: "" }));
+                  }
+                }}
                 className={`h-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
                   errors.email ? "border-destructive" : ""
                 }`}
@@ -341,46 +347,51 @@ function SignUpPage({ onNavigate }) {
               )}
             </div>
 
-          <div className="space-y-2">
-  <Label htmlFor="password" className="text-sm font-medium text-foreground">
-    Password
-  </Label>
-  <div className="relative">
-    <Input
-      id="password"
-      type={showPassword ? "text" : "password"}
-      placeholder="Create a strong password"
-      value={formData.password}
-      onChange={(e) => {
-        const value = e.target.value;
-        handleInputChange("password", value);
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-foreground"
+              >
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a strong password"
+                  value={formData.password}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleInputChange("password", value);
 
-        // 🔥 Simple password validation (>= 8 chars)
-        if (value.length < 8) {
-          setErrors((prev) => ({
-            ...prev,
-            password: "Password must be at least 8 characters long",
-          }));
-        } else {
-          setErrors((prev) => ({ ...prev, password: "" }));
-        }
-      }}
-      className={`h-12 pr-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
-        errors.password ? "border-destructive" : ""
-      }`}
-    />
-    <button
-      type="button"
-      onClick={() => setShowPassword(!showPassword)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-    >
-      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-    </button>
-  </div>
-  {errors.password && (
-    <p className="text-destructive text-sm mt-1">{errors.password}</p>
-  )}
-</div>
+                    // 🔥 Simple password validation (>= 8 chars)
+                    if (value.length < 8) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        password: "Password must be at least 8 characters long",
+                      }));
+                    } else {
+                      setErrors((prev) => ({ ...prev, password: "" }));
+                    }
+                  }}
+                  className={`h-12 pr-12 bg-input-background border-border focus:border-newzia-primary focus:ring-2 focus:ring-newzia-primary/20 rounded-xl ${
+                    errors.password ? "border-destructive" : ""
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.password}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label
