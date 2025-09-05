@@ -7,8 +7,9 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JWT_SECRET=SuperSecretKey
     healthcheck:
-      test: ["CMD-SHELL", "curl -u admin:password -f http://13.204.131.161:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -u admin:password -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
