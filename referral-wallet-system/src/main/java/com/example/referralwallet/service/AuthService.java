@@ -59,8 +59,8 @@ public class AuthService {
         logger.log(Level.INFO, "Temp user stored for email: {0}", request.getEmail());
     }
 
-    public AuthDtos.RegisterResponse registerAfterOtp(String mobile, AuthDtos.RegisterRequest request) {
-        logger.log(Level.INFO, "Registering user after OTP for mobile: {0}, email: {1}", new Object[]{mobile, request.getEmail()});
+    public AuthDtos.RegisterResponse registerAfterOtp(String email, AuthDtos.RegisterRequest request) {
+        logger.log(Level.INFO, "Registering user after OTP for email: {0}", request.getEmail());
         AuthDtos.RegisterRequest storedRequest = tempUsers.get(request.getEmail());
         if (storedRequest == null) {
             logger.log(Level.WARNING, "No pending registration found for email: {0}", request.getEmail());

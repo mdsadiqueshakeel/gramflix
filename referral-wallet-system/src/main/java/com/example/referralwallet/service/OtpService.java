@@ -56,8 +56,8 @@ public class OtpService {
                 ? defaultChannel
                 : req.getChannel().toLowerCase();
 
-        // Basic validation for phone number format
-        if (("whatsapp".equals(channel) || "sms".equals(channel))) {
+        // Basic validation for phone number/email format
+        if (("whatsapp".equals(channel) || "sms".equals(channel) || "email".equals(channel))) {
             // Phone number validation will be handled in MSG91Service
             log.debug("Sending OTP to: " + to);
         }
@@ -93,13 +93,15 @@ public class OtpService {
                 emailService.sendHtml(req.getTo(), "Your OTP Code", msg);
                 break;
             default:
-                log.warn("Unknown channel '{}', falling back to SMS", channel);
-                msg91Service.sendOtp(to, code, channel, devEcho ? code : customOtp);
+                log.warn("Unknown channel '{}', falling back to email", channel);
+                emailService.sendHtml(req.getTo(), "Your OTP Code", msg);
         }
 
         OtpDtos.OtpSendResponse resp = new OtpDtos.OtpSendResponse();
         resp.setMessage("OTP sent via " + channel);
-        resp.setDevEchoOtp(code);
+        if (devEcho) {
+            resp.setDevEchoOtp(code);
+        }
 
         return resp;
     }

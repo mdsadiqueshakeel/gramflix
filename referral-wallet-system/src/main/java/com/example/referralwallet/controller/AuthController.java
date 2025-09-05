@@ -74,10 +74,11 @@ public class AuthController {
             // 5️⃣ Temp register user for OTP
             authService.tempRegister(request);
     
-            // 6️⃣ Send OTP
+            // 6️⃣ Send OTP to email
             OtpDtos.OtpSendRequest otpReq = new OtpDtos.OtpSendRequest();
-            otpReq.setTo(request.getMobile().replace("+91", ""));
-            logger.log(Level.INFO, "📲 [DEBUG] Sending OTP to: {0}", otpReq.getTo());
+            otpReq.setTo(request.getEmail());
+            otpReq.setChannel("email"); // Explicitly set channel to email
+            logger.log(Level.INFO, "📲 [DEBUG] Sending OTP to email: {0}", otpReq.getTo());
             OtpDtos.OtpSendResponse otpSendResponse = otpService.sendOtp(otpReq);
             logger.log(Level.INFO, "✅ [DEBUG] OTP sent successfully");
     
@@ -100,7 +101,7 @@ public class AuthController {
             logger.log(Level.INFO, "📝 [DEBUG] complete-register called for mobile: {0}, email: {1}",
                     new Object[]{request.getMobile(), request.getEmail()});
 
-            AuthDtos.RegisterResponse regResp = authService.registerAfterOtp(request.getMobile(), request);
+            AuthDtos.RegisterResponse regResp = authService.registerAfterOtp(request.getEmail(), request);
             logger.log(Level.INFO, "✅ [DEBUG] User registered successfully, userId: {0}", regResp.getUserId());
 
             response = new ApiResponse(true, "Registration successful");
