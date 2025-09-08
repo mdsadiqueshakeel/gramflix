@@ -360,8 +360,21 @@ emailService.sendHtml("projecttesting897@gmail.com", "Premium Upgrade Request", 
         Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Wallet not found"));
         UserDtos.WalletResponse response = new UserDtos.WalletResponse();
         response.setWalletBalance(wallet.getWalletBalance());
-        response.setTodaysEarning(wallet.getTodaysEarning());
-        response.setThisWeekEarning(wallet.getThisWeekEarning());
+        // Calculate earnings for today (last 24 hours)
+        LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+        double todaysEarning = wallet.getWalletHistory().stream()
+                .filter(transaction -> transaction.getCreatedAt().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime().isAfter(twentyFourHoursAgo) && transaction.getAmount() > 0)
+                .mapToDouble(WalletTransaction::getAmount)
+                .sum();
+        response.setTodaysEarning(todaysEarning);
+
+        // Calculate earnings for this week (last 7 days)
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        double thisWeekEarning = wallet.getWalletHistory().stream()
+                .filter(transaction -> transaction.getCreatedAt().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime().isAfter(sevenDaysAgo) && transaction.getAmount() > 0)
+                .mapToDouble(WalletTransaction::getAmount)
+                .sum();
+        response.setThisWeekEarning(thisWeekEarning);
         response.setTotalEarning(wallet.getTotalEarning());
         response.setTotalWithdrawal(wallet.getTotalWithdrawal());
         System.out.println("💰 [DEBUG] Fetched wallet for userId: " + userId + ", Balance=" + wallet.getWalletBalance());

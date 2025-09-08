@@ -22,16 +22,24 @@ public class WalletService {
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
-        LocalDate regDate = registrationDateTime.toLocalDate();
-        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+        // Calculate earnings for today (last 24 hours)
+        LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+        double todaysEarning = wallet.getWalletHistory().stream()
+                .filter(transaction -> transaction.getCreatedAt().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime().isAfter(twentyFourHoursAgo) && transaction.getAmount() > 0)
+                .mapToDouble(WalletTransaction::getAmount)
+                .sum();
+        wallet.setTodaysEarning(todaysEarning);
 
-        if (!regDate.isEqual(today)) wallet.setTodaysEarning(0.0);
-        if (regDate.isBefore(weekStart)) wallet.setThisWeekEarning(0.0);
+        // Calculate earnings for this week (last 7 days)
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        double thisWeekEarning = wallet.getWalletHistory().stream()
+                .filter(transaction -> transaction.getCreatedAt().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime().isAfter(sevenDaysAgo) && transaction.getAmount() > 0)
+                .mapToDouble(WalletTransaction::getAmount)
+                .sum();
+        wallet.setThisWeekEarning(thisWeekEarning);
 
         wallet.setWalletBalance(wallet.getWalletBalance() + amount);
-        wallet.setTodaysEarning(wallet.getTodaysEarning() + amount);
-        wallet.setThisWeekEarning(wallet.getThisWeekEarning() + amount);
+
         wallet.setTotalEarning(wallet.getTotalEarning() + amount);
         wallet.setTotalWithdrawal(wallet.getTotalWithdrawal()+amount);
         wallet.getWalletHistory().add(new WalletTransaction("BONUS", amount, meta, new Date()));
