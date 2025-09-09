@@ -1,13 +1,8 @@
-name: Deploy GramFlix to EC2
+name: Deploy to EC2
 
 on:
   push:
     branches: [ "master" ]
-
-env:
-  AWS_REGION: ap-south-1
-  INSTANCE_ID: i-003663f28cf482aa0       # your EC2 instance ID
-  APP_DIR: /home/ec2-user/gramflix
 
 jobs:
   deploy:
@@ -22,29 +17,38 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Deploy via SSM (SSH)
+      - name: Deploy App via SSM
         run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --targets "Key=instanceIds,Values=${i-003663f28cf482aa0}" \
+          INSTANCE_ID=i-003663f28cf482aa0
+          SSM_USER_HOME=/home/ssm-user
+          APP_DIR=$SSM_USER_HOME/app/gramflix
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
             --document-name "AWS-RunShellScript" \
-            --comment "GramFlix Deployment via SSH" \
+            --comment "Create app folder" \
+            --parameters "commands=[\"mkdir -p $APP_DIR\"]"
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Add GitHub to known hosts" \
+            --parameters "commands=[\"ssh-keyscan github.com >> $SSM_USER_HOME/.ssh/known_hosts\"]"
+
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Clone or update repo" \
             --parameters "commands=[
-              \"mkdir -p ${APP_DIR}\",
+              \"if [ -d '$APP_DIR/.git' ]; then cd $APP_DIR && git pull origin master; else git clone git@github.com:mdsadiqueshakeel/gramflix.git $APP_DIR; fi\"
+            ]"
 
-              \"# 🧹 Clean Docker logs + unused data\",
-              \"sudo find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \;\",
-              \"sudo docker system prune -af --volumes\",
-
-              \"# 🔄 Update repo via SSH\",
-              \"if [ -d '${APP_DIR}/.git' ]; then cd ${APP_DIR} && git reset --hard && git pull origin master; \
-               else git clone git@github.com:mdsadiqueshakeel/gramflix.git ${APP_DIR}; fi\",
-
-              \"# 🚀 Rebuild containers\",
-              \"cd ${APP_DIR} && sudo docker-compose -f docker-compose.prod.yml down && sudo docker-compose -f docker-compose.prod.yml up -d --build\"
-            ]" \
-            --query "Command.CommandId" \
-            --output text)
-
-          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "${INSTANCE_ID}"
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Docker refresh" \
+            --parameters "commands=[
+              \"cd $APP_DIR && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d --build\"
+            ]"
