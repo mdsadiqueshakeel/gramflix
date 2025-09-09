@@ -2,19 +2,19 @@ name: Deploy Gramflix to EC2
 
 on:
   push:
-    branches: [ "master" ]   # runs when pushing to master
+    branches: [ "master" ]
 
 env:
   AWS_REGION: ap-south-1
   INSTANCE_ID: i-003663f28cf482aa0
-  APP_DIR: /home/ec2-user/gramflix
+  APP_DIR: /home/ssm-user/gramflix  # updated for SSM user
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
@@ -24,24 +24,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy using SSM
+      - name: Deploy via SSM with debug
         run: |
+          echo "==> Sending deploy command to EC2..."
           COMMAND_ID=$(aws ssm send-command \
             --targets "Key=instanceIds,Values=${INSTANCE_ID}" \
             --document-name "AWS-RunShellScript" \
-            --comment "Gramflix Deployment" \
+            --comment "Gramflix Deployment with debug" \
             --parameters 'commands=[
-              "echo === Cleaning Docker ===",
+              "echo === USER INFO ===",
+              "whoami",
+              "pwd",
+              "echo === Cleaning Docker logs ===",
               "sudo find /var/lib/docker/containers/ -name *-json.log -exec truncate -s 0 {} \;",
-              "docker system prune -af --volumes",
-
+              "sudo docker system prune -af --volumes",
               "echo === Updating repo ===",
-              "if [ -d \"${APP_DIR}/.git\" ]; then cd ${APP_DIR} && git reset --hard && git pull origin master; else git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mdsadiqueshakeel/gramflix.git ${APP_DIR}; fi",
-
+              "if [ -d \"${APP_DIR}/.git\" ]; then cd ${APP_DIR} && git fetch origin && git reset --hard origin/master; else git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mdsadiqueshakeel/gramflix.git ${APP_DIR}; fi",
               "echo === Rebuilding containers ===",
-              "cd ${APP_DIR} && docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d --build"
+              "cd ${APP_DIR} && sudo docker-compose -f docker-compose.prod.yml down",
+              "cd ${APP_DIR} && sudo docker-compose -f docker-compose.prod.yml up -d --build"
             ]' \
             --query "Command.CommandId" \
             --output text)
 
+          echo "==> Waiting for command execution..."
           aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "${INSTANCE_ID}"
+
+          echo "==> Fetching command output for debugging..."
+          aws ssm list-command-invocations \
+            --command-id "$COMMAND_ID" \
+            --details \
+            --region ${AWS_REGION}
