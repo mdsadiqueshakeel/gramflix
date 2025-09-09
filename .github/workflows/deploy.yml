@@ -1,15 +1,20 @@
-name: Deploy to EC2
+name: Deploy Gramflix to EC2
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master" ]   # runs when pushing to master
+
+env:
+  AWS_REGION: ap-south-1
+  INSTANCE_ID: i-003663f28cf482aa0
+  APP_DIR: /home/ec2-user/gramflix
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
@@ -17,38 +22,26 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy App via SSM
+      - name: Deploy using SSM
         run: |
-          INSTANCE_ID=i-003663f28cf482aa0
-          SSM_USER_HOME=/home/ssm-user
-          APP_DIR=$SSM_USER_HOME/app/gramflix
-
-          aws ssm send-command \
-            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
+          COMMAND_ID=$(aws ssm send-command \
+            --targets "Key=instanceIds,Values=${INSTANCE_ID}" \
             --document-name "AWS-RunShellScript" \
-            --comment "Create app folder" \
-            --parameters "commands=[\"mkdir -p $APP_DIR\"]"
+            --comment "Gramflix Deployment" \
+            --parameters 'commands=[
+              "echo === Cleaning Docker ===",
+              "sudo find /var/lib/docker/containers/ -name *-json.log -exec truncate -s 0 {} \;",
+              "docker system prune -af --volumes",
 
-          aws ssm send-command \
-            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Add GitHub to known hosts" \
-            --parameters "commands=[\"ssh-keyscan github.com >> $SSM_USER_HOME/.ssh/known_hosts\"]"
+              "echo === Updating repo ===",
+              "if [ -d \"${APP_DIR}/.git\" ]; then cd ${APP_DIR} && git reset --hard && git pull origin master; else git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mdsadiqueshakeel/gramflix.git ${APP_DIR}; fi",
 
-          aws ssm send-command \
-            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Clone or update repo" \
-            --parameters "commands=[
-              \"if [ -d '$APP_DIR/.git' ]; then cd $APP_DIR && git pull origin master; else git clone git@github.com:mdsadiqueshakeel/gramflix.git $APP_DIR; fi\"
-            ]"
+              "echo === Rebuilding containers ===",
+              "cd ${APP_DIR} && docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d --build"
+            ]' \
+            --query "Command.CommandId" \
+            --output text)
 
-          aws ssm send-command \
-            --targets "Key=instanceIds,Values=i-003663f28cf482aa0" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Docker refresh" \
-            --parameters "commands=[
-              \"cd $APP_DIR && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d --build\"
-            ]"
+          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "${INSTANCE_ID}"
