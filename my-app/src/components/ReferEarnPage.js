@@ -181,7 +181,7 @@ function ReferEarnPage({ onNavigate }) {
   // Get withdrawal date for specific amounts
   const getWithdrawalDate = (amount) => {
     const request = withdrawRequests.find((req) => req.amount === amount);
-    return request ? new Date(request.updatedAt).toLocaleDateString() : null;
+    return request ? new Date(request.createdAt).toLocaleDateString() : null;
   };
 
   // Check if withdrawal is already claimed (approved) - for one-time withdrawals only

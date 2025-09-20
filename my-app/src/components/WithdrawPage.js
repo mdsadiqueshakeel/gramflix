@@ -113,9 +113,9 @@ function WithdrawPage({ onNavigate }) {
 
     return {
       canWithdraw100: !hasWithdrawn100 && walletBalance >= 100,
-      canWithdraw900: !hasWithdrawn900 && referredChildBoughtPremium && walletBalance >= 900,
-      // FIXED: Check if user has exactly 2 premium referrals (2nd referral gets premium)
-      canWithdraw3000: referredChildrenWithPremium === 2 && walletBalance >= 3000,
+      canWithdraw900: !hasWithdrawn900 && referredChildrenWithPremium >= 1 && walletBalance >= 900,
+      // FIXED: Check if user has at least 2 premium referrals (2nd referral gets premium)
+      canWithdraw3000: referredChildrenWithPremium >= 2 && walletBalance >= 3000,
       reason: null
     };
   };
