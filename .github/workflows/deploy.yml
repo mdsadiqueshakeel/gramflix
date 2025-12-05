@@ -348,8 +348,7 @@ name: Deploy Gramflix
 
 on:
   push:
-    branches:
-      - master
+    branches: ["master"]
 
 jobs:
   deploy:
@@ -359,72 +358,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ----------------------------
-      # FRONTEND BUILD (Next.js 15)
-      # ----------------------------
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install and Build Frontend
-        working-directory: my-app
+      # Build Next.js frontend
+      - name: Build Frontend
         run: |
+          cd my-app
           npm ci
           npm run build
 
-      # Upload frontend build to EC2
-      - name: Upload frontend build folder (.next + public)
+      # Upload entire frontend build to EC2
+      - name: Upload Frontend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "my-app/.next,my-app/public,my-app/package*.json,my-app/next.config.mjs,my-app/.env.production"
-          target: "/home/ec2-user/gramflix/my-app"
-          strip_components: 1
+          source: "my-app/out/*"
+          target: "/home/ec2-user/gramflix/frontend/"
 
-      # ----------------------------
-      # BACKEND BUILD (Maven)
-      # ----------------------------
-      - name: Set up Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Install Maven dependencies
-        working-directory: referral-wallet-system
-        run: ./mvnw -q -DskipTests package
-
-      # Upload backend JAR to EC2
-      - name: Upload backend JAR
+      # Upload backend JAR
+      - name: Upload Backend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "referral-wallet-system/target/*.jar"
-          target: "/home/ec2-user/gramflix/referral-wallet-system/target"
+          target: "/home/ec2-user/gramflix/referral-wallet-system/"
 
-      # ----------------------------
-      # DEPLOY (EC2 Docker Compose)
-      # ----------------------------
-      - name: Deploy on EC2
+      # Restart Docker
+      - name: Restart docker
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/gramflix
-            echo "Rebuilding backend image..."
-            docker compose -f docker-compose.prod.yml build backend
-
-            echo "Rebuilding frontend image..."
-            docker compose -f docker-compose.prod.yml build frontend
-
-            echo "Restarting services..."
+            docker compose -f docker-compose.prod.yml build
             docker compose -f docker-compose.prod.yml up -d
-
-            echo "Deployment completed!"
