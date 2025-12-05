@@ -400,8 +400,8 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ec2-user
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        source: "referral-wallet-system/target/referral-wallet-system-0.0.1-SNAPSHOT.jar"
-        target: "/home/ec2-user/gramflix/backend/"
+        source: "referral-wallet-system/"
+        target: "/home/ec2-user/gramflix/backend/referral-wallet-system/"
 
 
     # ------------------ RESTART DOCKER ------------------
