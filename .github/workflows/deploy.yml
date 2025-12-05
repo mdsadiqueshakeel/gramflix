@@ -146,7 +146,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "referral-wallet-system/target/*.jar"
-          target: "/home/ec2-user/gramflix/referral-wallet-system/target/"
+          target: "/home/ec2-user/gramflix/referral-wallet-system/"
 
       # 5️⃣ Deploy on EC2 using Docker
       - name: Deploy on EC2
