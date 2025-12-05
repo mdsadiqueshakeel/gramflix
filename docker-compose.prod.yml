@@ -15,12 +15,11 @@ services:
       retries: 5
   
   frontend:
-    build:
-      context: ./my-app
-      args:
-        NEXT_PUBLIC_BACKEND_URL: "https://api.gramflix.in"
+    build: ./my-app
     image: local-frontend:latest
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=https://api.gramflix.in
     depends_on:
       - backend
