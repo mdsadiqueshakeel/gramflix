@@ -84,9 +84,8 @@ services:
       context: ./my-app
       dockerfile: Dockerfile.prod   # ✔ correct
     image: local-frontend:latest
+    container_name: frontend
     ports:
       - "3000:80"                   # ✔ correct (served by nginx)
-    environment:
-      - NEXT_PUBLIC_BACKEND_URL=https://api.gramflix.in
     depends_on:
       - backend

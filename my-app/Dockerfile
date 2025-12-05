@@ -30,11 +30,22 @@
 # # CMD ["nginx","-g","daemon off;"]
 
 
+# Stage 1: Build Next.js (static export)
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+RUN npm run build   # output will be inside /app/out
+
+# Stage 2: Serve using NGINX
 FROM nginx:alpine
 
-WORKDIR /usr/share/nginx/html
-
-COPY out/ ./
+COPY --from=build /app/out /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
