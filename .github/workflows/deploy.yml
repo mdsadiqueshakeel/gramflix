@@ -174,6 +174,95 @@
 
 
 
+# name: Build & Deploy to EC2
+
+# on:
+#   push:
+#     branches: ["master"]
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ Checkout code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       # 2️⃣ Setup Java for building backend JAR
+#       - name: Set up Java 17
+#         uses: actions/setup-java@v3
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+
+#       # 3️⃣ Build Spring Boot JAR on GitHub runner
+#       - name: Build Backend JAR
+#         run: |
+#           cd referral-wallet-system
+#           chmod +x mvnw
+#           ./mvnw clean package -DskipTests
+#           echo "📦 Built JARs:"
+#           ls -la target/
+
+#       # 4️⃣ Clean old backend folder on EC2
+#       - name: Clean backend folder on EC2
+#         uses: appleboy/ssh-action@v0.1.10
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           script: |
+#             rm -rf /home/ec2-user/gramflix/referral-wallet-system
+#             mkdir -p /home/ec2-user/gramflix/referral-wallet-system/target
+
+#       # 5️⃣ Upload ONLY the JAR to EC2
+#       - name: Upload JAR to EC2
+#         uses: appleboy/scp-action@v0.1.7
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           source: "referral-wallet-system/target/referral-wallet-system-0.0.1-SNAPSHOT.jar"
+#           target: "/home/ec2-user/gramflix/referral-wallet-system/target/"
+
+#       # 6️⃣ Upload backend Dockerfile (optional but recommended)
+#       - name: Upload backend Dockerfile
+#         uses: appleboy/scp-action@v0.1.7
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           source: "referral-wallet-system/Dockerfile"
+#           target: "/home/ec2-user/gramflix/referral-wallet-system/"
+
+#       # 7️⃣ Deploy using Docker Compose
+#       - name: Deploy on EC2
+#         uses: appleboy/ssh-action@v0.1.10
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           script: |
+#             echo "🚀 Starting Deployment..."
+            
+#             cd /home/ec2-user/gramflix
+
+#             echo "📦 Checking JAR:"
+#             ls -la referral-wallet-system/target/
+
+#             echo "🐳 Building backend docker image..."
+#             docker compose -f docker-compose.prod.yml build backend
+
+#             echo "⬆️ Restarting containers..."
+#             docker compose -f docker-compose.prod.yml up -d
+
+#             echo "✔ Deployment complete!"
+
+
+
+
+
 name: Build & Deploy to EC2
 
 on:
@@ -185,27 +274,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout Source Code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Java for building backend JAR
+      # 2️⃣ Setup Java for building Spring Boot backend
       - name: Set up Java 17
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
-      # 3️⃣ Build Spring Boot JAR on GitHub runner
+      # 3️⃣ Build Backend JAR
       - name: Build Backend JAR
         run: |
+          echo "🔨 Building backend JAR..."
           cd referral-wallet-system
           chmod +x mvnw
           ./mvnw clean package -DskipTests
           echo "📦 Built JARs:"
           ls -la target/
 
-      # 4️⃣ Clean old backend folder on EC2
+      # 4️⃣ Clean backend folder on EC2 (but DO NOT delete folder)
       - name: Clean backend folder on EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -213,30 +303,32 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            rm -rf /home/ec2-user/gramflix/referral-wallet-system
-            mkdir -p /home/ec2-user/gramflix/referral-wallet-system/target
+            echo "🧹 Cleaning EC2 backend folder..."
+            rm -rf /home/ec2-user/gramflix/referral-wallet-system/*
+            mkdir -p /home/ec2-user/gramflix/referral-wallet-system/
+            echo "✔ Folder cleaned"
 
-      # 5️⃣ Upload ONLY the JAR to EC2
-      - name: Upload JAR to EC2
+      # 5️⃣ Upload FULL backend folder (Dockerfile + src + pom + target)
+      - name: Upload FULL backend folder
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "referral-wallet-system/target/referral-wallet-system-0.0.1-SNAPSHOT.jar"
-          target: "/home/ec2-user/gramflix/referral-wallet-system/target/"
-
-      # 6️⃣ Upload backend Dockerfile (optional but recommended)
-      - name: Upload backend Dockerfile
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "referral-wallet-system/Dockerfile"
+          source: "referral-wallet-system/*"
           target: "/home/ec2-user/gramflix/referral-wallet-system/"
 
-      # 7️⃣ Deploy using Docker Compose
+      # 6️⃣ Upload root-level docker-compose.prod.yml to EC2
+      - name: Upload docker-compose.prod.yml
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/home/ec2-user/gramflix/"
+
+      # 7️⃣ Deploy using Docker Compose on EC2
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -248,13 +340,13 @@ jobs:
             
             cd /home/ec2-user/gramflix
 
-            echo "📦 Checking JAR:"
-            ls -la referral-wallet-system/target/
+            echo "📦 Checking backend files:"
+            ls -la referral-wallet-system/
 
-            echo "🐳 Building backend docker image..."
-            docker compose -f docker-compose.prod.yml build backend
+            echo "🐳 Building images..."
+            docker compose -f docker-compose.prod.yml build
 
-            echo "⬆️ Restarting containers..."
+            echo "⬆ Restarting containers..."
             docker compose -f docker-compose.prod.yml up -d
 
-            echo "✔ Deployment complete!"
+            echo "✔ Deployment Success!"
