@@ -348,51 +348,48 @@ name: Deploy Gramflix
 
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      # Build Next.js frontend
-      - name: Build Frontend
-        run: |
-          cd my-app
-          npm ci
-          npm run build
+    - name: Build Next.js
+      working-directory: my-app
+      run: |
+        npm ci
+        npm run build
 
-      # Upload entire frontend build to EC2
-      - name: Upload Frontend
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "my-app/out/*"
-          target: "/home/ec2-user/gramflix/frontend/"
+    - name: Upload frontend build to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        source: "my-app/out/*"
+        target: "/home/ec2-user/gramflix/frontend"
+        strip_components: 2
 
-      # Upload backend JAR
-      - name: Upload Backend
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "referral-wallet-system/target/*.jar"
-          target: "/home/ec2-user/gramflix/referral-wallet-system/"
+    - name: Upload backend JAR to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        source: "referral-wallet-system/target/referral-wallet-system-0.0.1-SNAPSHOT.jar"
+        target: "/home/ec2-user/gramflix/backend/"
 
-      # Restart Docker
-      - name: Restart docker
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ec2-user/gramflix
-            docker compose -f docker-compose.prod.yml build
-            docker compose -f docker-compose.prod.yml up -d
+    - name: Restart EC2 backend+frontend
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/ec2-user/gramflix
+          docker compose -f docker-compose.prod.yml down
+          docker compose -f docker-compose.prod.yml up -d --build
