@@ -106,6 +106,74 @@
 
 
 
+# name: Build & Deploy to EC2
+
+# on:
+#   push:
+#     branches: [ "master" ]
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ Checkout code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       # 2️⃣ Setup Java for building backend JAR
+#       - name: Set up Java 17
+#         uses: actions/setup-java@v3
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+
+#       # 3️⃣ Build Spring Boot JAR (on GitHub runner)
+#       - name: Build Backend JAR
+#         run: |
+#           echo "🔨 Building JAR..."
+#           cd referral-wallet-system
+#           chmod +x mvnw
+#           ./mvnw clean package -DskipTests
+#           echo "📦 Built files in target/:"
+#           ls -la target
+
+#       # 4️⃣ Upload JAR to EC2 (clean target first)
+#       - name: Upload JAR to EC2
+#         uses: appleboy/scp-action@v0.1.7
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           source: "referral-wallet-system/target/*.jar"
+#           target: "/home/ec2-user/gramflix/referral-wallet-system/"
+
+#       # 5️⃣ Deploy on EC2 using Docker
+#       - name: Deploy on EC2
+#         uses: appleboy/ssh-action@v0.1.10
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           script: |
+#             echo "🚀 Starting Deployment..."
+
+#             cd /home/ec2-user/gramflix
+
+#             echo "📦 Files inside backend target:"
+#             ls referral-wallet-system/target/
+
+#             echo "🐳 Building backend image..."
+#             docker compose -f docker-compose.prod.yml build backend
+
+#             echo "⬆️ Starting containers..."
+#             docker compose -f docker-compose.prod.yml up -d
+
+#             echo "✔ Deployment complete!"
+
+
+
+
 name: Build & Deploy to EC2
 
 on:
@@ -121,25 +189,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Java for building backend JAR
+      # 2️⃣ Setup Java
       - name: Set up Java 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3️⃣ Build Spring Boot JAR (on GitHub runner)
+      # 3️⃣ Build JAR
       - name: Build Backend JAR
         run: |
-          echo "🔨 Building JAR..."
           cd referral-wallet-system
           chmod +x mvnw
           ./mvnw clean package -DskipTests
-          echo "📦 Built files in target/:"
           ls -la target
 
-      # 4️⃣ Upload JAR to EC2 (clean target first)
-      - name: Upload JAR to EC2
+      # 4️⃣ Clean old JAR on EC2
+      - name: Clean old JAR folder on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            rm -rf /home/ec2-user/gramflix/referral-wallet-system/*.jar
+
+      # 5️⃣ Upload new JAR
+      - name: Upload backend JAR to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -148,7 +224,7 @@ jobs:
           source: "referral-wallet-system/target/*.jar"
           target: "/home/ec2-user/gramflix/referral-wallet-system/"
 
-      # 5️⃣ Deploy on EC2 using Docker
+      # 6️⃣ Deploy using Docker
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -157,16 +233,15 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "🚀 Starting Deployment..."
-
             cd /home/ec2-user/gramflix
 
-            echo "📦 Files inside backend target:"
-            ls referral-wallet-system/target/
+            echo "📦 Uploaded JAR:"
+            ls referral-wallet-system/*.jar
 
-            echo "🐳 Building backend image..."
+            echo "🐳 Building Docker image..."
             docker compose -f docker-compose.prod.yml build backend
 
-            echo "⬆️ Starting containers..."
+            echo "⬆️ Restarting containers..."
             docker compose -f docker-compose.prod.yml up -d
 
             echo "✔ Deployment complete!"
