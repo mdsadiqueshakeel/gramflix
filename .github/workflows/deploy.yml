@@ -349,59 +349,82 @@ name: Deploy Gramflix
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Install Java for Spring Boot
-    - name: Setup Java
-      uses: actions/setup-java@v3
-      with:
-        java-version: 17
-        distribution: temurin
+      # ----------------------------
+      # FRONTEND BUILD (Next.js 15)
+      # ----------------------------
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    # Build Backend
-    - name: Build Spring Boot JAR
-      run: |
-        cd referral-wallet-system
-        ./mvnw clean package -DskipTests
+      - name: Install and Build Frontend
+        working-directory: my-app
+        run: |
+          npm ci
+          npm run build
 
-    # Build frontend (Next.js)
-    - name: Install & Build Frontend
-      run: |
-        cd my-app
-        npm ci
-        npm run build   # output: /my-app/out
+      # Upload frontend build to EC2
+      - name: Upload frontend build folder (.next + public)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "my-app/.next,my-app/public,my-app/package*.json,my-app/next.config.mjs,my-app/.env.production"
+          target: "/home/ec2-user/gramflix/my-app"
+          strip_components: 1
 
-    # Copy built files to server
-    - name: Copy build folder and JAR to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        source: "referral-wallet-system/target/*.jar,my-app/out/**"
-        target: "/home/ec2-user/gramflix/deploy"
+      # ----------------------------
+      # BACKEND BUILD (Maven)
+      # ----------------------------
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    # Run docker compose on EC2
-    - name: Deploy on EC2
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          cd /home/ec2-user/gramflix
-          docker compose -f docker-compose.prod.yml down
-          docker compose -f docker-compose.prod.yml build
-          docker compose -f docker-compose.prod.yml up -d
+      - name: Install Maven dependencies
+        working-directory: referral-wallet-system
+        run: ./mvnw -q -DskipTests package
 
+      # Upload backend JAR to EC2
+      - name: Upload backend JAR
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "referral-wallet-system/target/*.jar"
+          target: "/home/ec2-user/gramflix/referral-wallet-system/target"
 
+      # ----------------------------
+      # DEPLOY (EC2 Docker Compose)
+      # ----------------------------
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/gramflix
+            echo "Rebuilding backend image..."
+            docker compose -f docker-compose.prod.yml build backend
 
-          
+            echo "Rebuilding frontend image..."
+            docker compose -f docker-compose.prod.yml build frontend
+
+            echo "Restarting services..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Deployment completed!"
