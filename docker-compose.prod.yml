@@ -34,8 +34,7 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-    depends_on:
-      - frontend
+      - JWT_SECRET=SuperSecretKey
 
   frontend:
     build: ./my-app
@@ -44,3 +43,5 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_BACKEND_URL=https://api.gramflix.in
+    depends_on:
+      - backend
