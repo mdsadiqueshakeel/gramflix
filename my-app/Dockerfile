@@ -1,5 +1,5 @@
-# Stage 1: Build frontend
-FROM node:18-alpine AS build
+# Stage 1 — Build
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -7,24 +7,23 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-# Copy environment for build
-COPY .env .env.production
+
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
 RUN npm run build
 
-# Stage 2: Run frontend
+# Stage 2 — Production runtime
 FROM node:18-alpine
 
 WORKDIR /app
 
-COPY --from=build /app/package*.json ./
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/next.config.mjs ./
-COPY --from=build /app/.env.production .env
-
+COPY package*.json ./
 RUN npm ci --production
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
 
 EXPOSE 3000
 CMD ["npm", "start"]
-# CMD ["nginx","-g","daemon off;"]
