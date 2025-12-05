@@ -178,84 +178,83 @@ name: Build & Deploy to EC2
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout Code
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # 2️⃣ Setup Java 17 for building JAR
-    - name: Setup Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      # 2️⃣ Setup Java for building backend JAR
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    # 3️⃣ Build backend JAR
-    - name: Build Spring Boot JAR
-      run: |
-        echo "🔨 Building JAR..."
-        cd referral-wallet-system
-        chmod +x mvnw
-        ./mvnw clean package -DskipTests
-        echo "📦 Built JAR:"
-        ls -la target/*.jar
+      # 3️⃣ Build Spring Boot JAR on GitHub runner
+      - name: Build Backend JAR
+        run: |
+          cd referral-wallet-system
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+          echo "📦 Built JARs:"
+          ls -la target/
 
-    # 4️⃣ Remove old backend folder on EC2 (prevents duplication)
-    - name: Remove old backend folder on EC2
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          rm -rf /home/ec2-user/gramflix/referral-wallet-system
-          mkdir -p /home/ec2-user/gramflix/referral-wallet-system
+      # 4️⃣ Clean old backend folder on EC2
+      - name: Clean backend folder on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            rm -rf /home/ec2-user/gramflix/referral-wallet-system
+            mkdir -p /home/ec2-user/gramflix/referral-wallet-system/target
 
-    # 5️⃣ Upload ONLY backend files (no folder nesting)
-    - name: Upload backend source code
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "referral-wallet-system/*"
-        target: "/home/ec2-user/gramflix/referral-wallet-system/"
+      # 5️⃣ Upload ONLY the JAR to EC2
+      - name: Upload JAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "referral-wallet-system/target/referral-wallet-system-0.0.1-SNAPSHOT.jar"
+          target: "/home/ec2-user/gramflix/referral-wallet-system/target/"
 
-    # 6️⃣ Upload JAR to backend folder
-    - name: Upload backend JAR
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "referral-wallet-system/target/*.jar"
-        target: "/home/ec2-user/gramflix/referral-wallet-system"
-        strip_components: 1
+      # 6️⃣ Upload backend Dockerfile (optional but recommended)
+      - name: Upload backend Dockerfile
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "referral-wallet-system/Dockerfile"
+          target: "/home/ec2-user/gramflix/referral-wallet-system/"
 
-    # 7️⃣ Deploy on EC2 using Docker Compose
-    - name: Deploy on EC2
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          echo "🚀 Starting Deployment..."
-          cd /home/ec2-user/gramflix
+      # 7️⃣ Deploy using Docker Compose
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Starting Deployment..."
+            
+            cd /home/ec2-user/gramflix
 
-          echo "📦 JAR inside backend folder:"
-          ls -la referral-wallet-system/*.jar
+            echo "📦 Checking JAR:"
+            ls -la referral-wallet-system/target/
 
-          echo "🐳 Building backend image..."
-          docker compose -f docker-compose.prod.yml build backend
+            echo "🐳 Building backend docker image..."
+            docker compose -f docker-compose.prod.yml build backend
 
-          echo "⬆️ Restarting containers..."
-          docker compose -f docker-compose.prod.yml up -d
+            echo "⬆️ Restarting containers..."
+            docker compose -f docker-compose.prod.yml up -d
 
-          echo "✔ Deployment complete!"
+            echo "✔ Deployment complete!"
