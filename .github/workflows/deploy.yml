@@ -380,7 +380,7 @@ jobs:
           cd my-app
           npm install
           npm run build
-          ls -la build/
+          ls -la out/
 
       # 5️⃣ Clean old folder on EC2
       - name: Clean EC2 folders
@@ -412,8 +412,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "my-app/build/*"
-          target: "/home/ec2-user/gramflix/my-app/build/"
+          source: "my-app/out/*"
+          target: "/home/ec2-user/gramflix/my-app/out/"
 
       # 8️⃣ Upload Dockerfile.prod for frontend
       - name: Upload frontend Dockerfile.prod

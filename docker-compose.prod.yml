@@ -47,6 +47,28 @@
 #       - backend
 
 
+# services:
+#   backend:
+#     build: ./referral-wallet-system
+#     image: local-backend:latest
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       - SPRING_PROFILES_ACTIVE=prod
+#       - JWT_SECRET=SuperSecretKey
+
+#   frontend:
+#     build:
+#       context: ./my-app
+#       dockerfile: Dockerfile.prod
+#     image: local-frontend:latest
+#     ports:
+#       - "3000:80"
+#     depends_on:
+#       - backend
+
+
+
 services:
   backend:
     build: ./referral-wallet-system
@@ -60,10 +82,11 @@ services:
   frontend:
     build:
       context: ./my-app
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile.prod   # ✔ correct
     image: local-frontend:latest
     ports:
-      - "3000:80"
+      - "3000:80"                   # ✔ correct (served by nginx)
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=https://api.gramflix.in
     depends_on:
       - backend
-
