@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/news")
+@RequestMapping("/api/newsu")
 @RequiredArgsConstructor
 @Slf4j
 public class NewsController {
